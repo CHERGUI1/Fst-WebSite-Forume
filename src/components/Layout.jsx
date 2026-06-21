@@ -36,7 +36,7 @@ export default function Layout({ children }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-col gap-3 py-3 md:h-16 md:flex-row md:items-center md:justify-between md:py-0">
             <div className="flex items-center justify-between gap-4">
               <Link to="/" className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-900 dark:bg-blue-600 flex items-center justify-center text-white font-bold text-lg">U</div>
+                <img src="/favicon.svg" alt="UniShare logo" className="w-8 h-8 rounded-lg bg-blue-900 dark:bg-blue-600" />
                 <span className="font-semibold text-lg tracking-tight text-blue-900 dark:text-white">UniShare</span>
               </Link>
 
