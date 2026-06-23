@@ -227,6 +227,12 @@ export const rejectResource = (resourceId, reason = '') => {
   }
 };
 
+export const deleteUploadedResource = (resourceId) => {
+  const uploads = getUploadedResources();
+  const filtered = uploads.filter((r) => String(r.id) !== String(resourceId));
+  localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(filtered));
+};
+
 // دوال إدارة التعليقات والمناقشات
 export const getSubjectComments = (subjectId) => {
   if (typeof window === 'undefined') return [];

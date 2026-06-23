@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUploadedResources, approveResource, rejectResource, getCurrentUser, logoutUser } from '../data/mockData';
+import { 
+  getUploadedResources, 
+  approveResource, 
+  rejectResource, 
+  deleteUploadedResource, 
+  getCurrentUser, 
+  logoutUser 
+} from '../data/mockData';
 
 export default function AdminUploads() {
   const navigate = useNavigate();
@@ -24,6 +31,13 @@ export default function AdminUploads() {
     const reason = window.prompt('سبب الرفض (اختياري)') || '';
     rejectResource(id, reason);
     setUploads(getUploadedResources());
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette ressource ?')) {
+      deleteUploadedResource(id);
+      setUploads(getUploadedResources());
+    }
   };
 
   const handleLogout = () => {
@@ -103,6 +117,12 @@ export default function AdminUploads() {
                       Télécharger
                     </a>
                   )}
+                  <button 
+                    onClick={() => handleDelete(up.id)} 
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    Supprimer
+                  </button>
                 </td>
               </tr>
             ))}
