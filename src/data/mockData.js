@@ -124,7 +124,14 @@ if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
 }
 
 // دوال إدارة المستخدمين
-export const getUsers = () => {
+export const updateUserRole = (username, newRole) => {
+  const users = getUsers();
+  const user = users.find(u => u.username === username);
+  if (user) {
+    user.role = newRole;
+    localStorage.setItem(INIT_USERS_KEY, JSON.stringify(users));
+  }
+};
   if (typeof window === 'undefined') return [];
   return JSON.parse(localStorage.getItem(INIT_USERS_KEY) || '[]');
 };
@@ -207,10 +214,24 @@ export const approveResource = (resourceId) => {
   }
 };
 
-export const rejectResource = (resourceId) => {
+export const updateUserRole = (username, newRole) => {
+  const users = getUsers();
+  const user = users.find((u) => u.username === username);
+  if (user) {
+    user.role = newRole;
+    localStorage.setItem(INIT_USERS_KEY, JSON.stringify(users));
+  }
+};
+
+// تعديل rejectResource لتخزين سبب الرفض
+export const rejectResource = (resourceId, reason = '') => {
   const uploads = getUploadedResources();
-  const filtered = uploads.filter((r) => String(r.id) !== String(resourceId));
-  localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(filtered));
+  const resource = uploads.find((r) => String(r.id) === String(resourceId));
+  if (resource) {
+    resource.status = 'rejected';
+    if (reason) resource.rejectionReason = reason;
+    localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(uploads));
+  }
 };
 
 // دوال إدارة التعليقات والمناقشات

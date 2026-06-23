@@ -12,21 +12,47 @@ import {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [currentUser] = useState(() => getCurrentUser());
-  const [pendingUploads, setPendingUploads] = useState(() => {
-    const user = getCurrentUser();
-    if (user && user.role === 'admin') {
-      return getUploadedResources().filter((r) => r.status === 'pending');
-    }
-    return [];
-  });
-  const [userContributions] = useState(() => {
-    const user = getCurrentUser();
-    if (user && user.role !== 'admin') {
-      return getUploadedResources().filter((r) => r.author === user.username);
-    }
-    return [];
-  });
+
+// State hooks
+const [currentUser] = useState(() => getCurrentUser());
+const [pendingUploads, setPendingUploads] = useState(() => {
+  const user = getCurrentUser();
+  if (user && user.role === 'admin') {
+    return getUploadedResources().filter((r) => r.status === 'pending');
+  }
+  return [];
+});
+const [userContributions, setUserContributions] = useState(() => {
+  const user = getCurrentUser();
+  if (user && user.role !== 'admin') {
+    return getUploadedResources().filter((r) => r.author === user.username);
+  }
+  return [];
+});
+
+// Navigation to admin pages
+const goToAdminUsers = () => navigate('/admin/users');
+const goToAdminUploads = () => navigate('/admin/uploads');
+
+// Refresh pending uploads after actions
+const refreshPending = () => {
+  const user = getCurrentUser();
+  if (user && user.role === 'admin') {
+    setPendingUploads(getUploadedResources().filter((r) => r.status === 'pending'));
+  }
+};
+
+const handleApprove = (id) => {
+  approveResource(id);
+  refreshPending();
+};
+
+const handleReject = (id) => {
+  const reason = window.prompt('سبب الرفض (اختياري)') || '';
+  rejectResource(id, reason);
+  refreshPending();
+};
+
 
   useEffect(() => {
     if (!getCurrentUser()) {

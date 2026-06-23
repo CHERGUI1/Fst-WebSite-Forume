@@ -25,6 +25,8 @@ export default function App() {
           <Route path="/specializations/:specId/semesters/:semesterId" element={<Semester />} />
           <Route path="/specializations/:specId/semesters/:semesterId/subjects/:subjectId" element={<Subject />} />
           <Route path="/specializations/:specId/semesters/:semesterId/subjects/:subjectId/resources/:category/:resourceId" element={<ResourceDetail />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/uploads" element={<AdminUploads />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
