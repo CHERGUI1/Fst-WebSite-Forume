@@ -28,9 +28,11 @@ export default function Subject() {
   // حالات نموذج الرفع
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCategory, setUploadCategory] = useState('courses');
-  const [uploadValue, setUploadValue] = useState(''); // الحجم أو الرابط
+  const [uploadValue, setUploadValue] = useState(''); // رابط يوتيوب
+  const [uploadFile, setUploadFile] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   // حالات منتدى المناقشة
   const [commentText, setCommentText] = useState('');
@@ -43,6 +45,7 @@ export default function Subject() {
     setUploadTitle('');
     setUploadCategory('courses');
     setUploadValue('');
+    setUploadFile(null);
     setUploadSuccess('');
     setUploadError('');
     setCommentText('');
@@ -58,19 +61,45 @@ export default function Subject() {
     return [...staticRes, ...dynamicRes];
   };
 
-  const handleUploadSubmit = (e) => {
+  const handleUploadSubmit = async (e) => {
     e.preventDefault();
     setUploadSuccess('');
     setUploadError('');
 
     if (!uploadTitle.trim()) {
-      setUploadError('Veuillez entrer un titre pour la ressource.');
+      setUploadError('الرجاء إدخال عنوان للملف.');
+      return;
+    }
+    if (uploadCategory !== 'youtube' && !uploadFile) {
+      setUploadError('الرجاء اختيار ملف للرفع.');
+      return;
+    }
+    if (uploadCategory === 'youtube' && !uploadValue.trim()) {
+      setUploadError('الرجاء إدخال رابط الفيديو.');
+      return;
+    }
+    if (uploadFile && uploadFile.size > 5 * 1024 * 1024) {
+      setUploadError('حجم الملف يتجاوز الحد الأقصى (5 MB).');
       return;
     }
 
-    const sizeOrLink = uploadValue.trim() || (uploadCategory === 'youtube' ? 'Lien vidéo' : '1.5 MB');
-
     try {
+      setUploading(true);
+      let fileUrl = null;
+      let fileSize = '';
+
+      if (uploadCategory !== 'youtube' && uploadFile) {
+        // قراءة الملف كـ base64 وحفظه في localStorage
+        fileUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target.result);
+          reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+          reader.readAsDataURL(uploadFile);
+        });
+        const kb = uploadFile.size / 1024;
+        fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb.toFixed(0)} KB`;
+      }
+
       addUploadedResource(
         uploadTitle,
         uploadCategory,
@@ -78,13 +107,22 @@ export default function Subject() {
         semesterId,
         subjectId,
         currentUser.username,
-        uploadCategory === 'youtube' ? 'Vidéo' : sizeOrLink
+        uploadCategory === 'youtube' ? uploadValue.trim() : fileSize,
+        fileUrl,
+        uploadFile?.name || null
       );
-      setUploadSuccess('Merci pour votre contribution ! Le document sera en ligne après validation par les modérateurs.');
+
+      setUploadSuccess('تم رفع الملف بنجاح! سيظهر بعد موافقة المشرف.');
       setUploadTitle('');
       setUploadValue('');
+      setUploadFile(null);
+      // reset file input
+      const fileInput = document.getElementById('upload-file');
+      if (fileInput) fileInput.value = '';
     } catch (err) {
-      setUploadError(err.message || 'Une erreur est survenue.');
+      setUploadError(err.message || 'حدث خطأ أثناء الرفع.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -239,25 +277,61 @@ export default function Subject() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="upload-value" className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mb-1">
-                  {uploadCategory === 'youtube' ? 'Lien de la vidéo Youtube' : 'Taille du fichier (Optionnel, Ex: 1.2 MB)'}
-                </label>
-                <input
-                  id="upload-value"
-                  type="text"
-                  value={uploadValue}
-                  onChange={(e) => setUploadValue(e.target.value)}
-                  placeholder={uploadCategory === 'youtube' ? 'https://www.youtube.com/watch?v=...' : '1.5 MB'}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-900"
-                />
-              </div>
+              {uploadCategory === 'youtube' ? (
+                <div>
+                  <label htmlFor="upload-value" className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mb-1">
+                    رابط الفيديو (YouTube)
+                  </label>
+                  <input
+                    id="upload-value"
+                    type="url"
+                    value={uploadValue}
+                    onChange={(e) => setUploadValue(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="upload-file" className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mb-1">
+                    اختر الملف (PDF أو صورة — الحد الأقصى 5 MB)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="upload-file"
+                      type="file"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg"
+                      onChange={(e) => setUploadFile(e.target.files[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <div className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-300 dark:border-zinc-600 rounded-xl text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-2 hover:border-blue-500 transition">
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                      </svg>
+                      {uploadFile ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold truncate">{uploadFile.name} — {(uploadFile.size/1024).toFixed(0)} KB</span>
+                      ) : (
+                        <span>اضغط لاختيار ملف...</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-blue-900 dark:bg-blue-600 hover:bg-blue-800 dark:hover:bg-blue-500 text-white font-semibold text-xs rounded-xl transition cursor-pointer"
+                disabled={uploading}
+                className="w-full px-4 py-2 bg-blue-900 dark:bg-blue-600 hover:bg-blue-800 dark:hover:bg-blue-500 text-white font-semibold text-xs rounded-xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Soumettre pour modération
+                {uploading ? (
+                  <>
+                    <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    جارٍ الرفع...
+                  </>
+                ) : 'رفع الملف'}
               </button>
             </form>
           ) : (

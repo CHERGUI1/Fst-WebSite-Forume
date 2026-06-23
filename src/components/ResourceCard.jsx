@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export default function ResourceCard({ title, date, size, type, hasCorrection, detailPath }) {
+export default function ResourceCard({ title, date, size, type, hasCorrection, detailPath, fileUrl, fileName }) {
   return (
     <div className="p-4 bg-white dark:bg-zinc-800 rounded-xl border border-slate-200 dark:border-zinc-700 hover:shadow-md transition group flex flex-col justify-between h-36">
       <div>
@@ -20,10 +20,25 @@ export default function ResourceCard({ title, date, size, type, hasCorrection, d
       </div>
       <div className="flex items-center justify-between text-xs text-slate-400 dark:text-zinc-500 pt-2 border-t border-slate-100 dark:border-zinc-700/50">
         <span>{date} - {size}</span>
-        <Link to={detailPath} className="text-blue-900 dark:text-blue-400 font-semibold hover:underline">
-          Détails
-        </Link>
+        {fileUrl ? (
+          <a
+            href={fileUrl}
+            download={fileName || title}
+            className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            تحميل
+          </a>
+        ) : (
+          <Link to={detailPath} className="text-blue-900 dark:text-blue-400 font-semibold hover:underline">
+            Détails
+          </Link>
+        )}
       </div>
     </div>
   );
 }
+

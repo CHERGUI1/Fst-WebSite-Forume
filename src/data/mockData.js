@@ -170,25 +170,28 @@ export const getUploadedResources = () => {
   return JSON.parse(localStorage.getItem(INIT_UPLOADS_KEY) || '[]');
 };
 
-export const addUploadedResource = (title, category, specId, semesterId, subjectId, author, size = '1.5 MB') => {
+export const addUploadedResource = (title, category, specId, semesterId, subjectId, author, size = '1.5 MB', fileUrl = null, fileName = null) => {
   const uploads = getUploadedResources();
   const newResource = {
     id: `upload-${Date.now()}`,
     title,
-    category, // courses, td, exams, youtube
+    category,
     specId,
     semesterId,
     subjectId,
     author,
     size,
-    format: 'PDF',
+    fileName,
+    fileUrl, // base64 أو رابط YouTube
+    format: category === 'youtube' ? 'Vidéo' : (fileName?.split('.').pop()?.toUpperCase() || 'PDF'),
     date: new Date().toISOString().split('T')[0],
-    status: 'pending', // pending, approved
+    status: 'pending',
   };
   uploads.push(newResource);
   localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(uploads));
   return newResource;
 };
+
 
 export const getApprovedResources = (subjectId) => {
   const uploads = getUploadedResources();
