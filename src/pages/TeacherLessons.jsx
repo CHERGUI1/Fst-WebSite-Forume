@@ -1,22 +1,19 @@
 // src/pages/TeacherLessons.jsx
+// src/pages/TeacherLessons.jsx
 import { useEffect, useState } from 'react';
+import { getUploadedResources } from '../data/mockData';
 
 export default function TeacherLessons() {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        const res = await fetch('/uploads/lessons.json');
-        if (!res.ok) throw new Error('No lessons data');
-        const data = await res.json();
-        setLessons(data);
-      } catch (e) {
-        setLessons([]);
-      } finally {
-        setLoading(false);
-      }
+    const fetchLessons = () => {
+      // Directly obtain uploaded resources from localStorage via mockData helper
+      const uploads = getUploadedResources();
+      // Filter to only those that belong to the current subject (if needed later)
+      setLessons(uploads);
+      setLoading(false);
     };
     fetchLessons();
   }, []);
@@ -33,15 +30,17 @@ export default function TeacherLessons() {
           {lessons.map((lesson) => (
             <li key={lesson.id} className="p-4 bg-white dark:bg-zinc-800 rounded shadow">
               <h2 className="font-semibold text-lg">{lesson.title}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300">نوع الملف: {lesson.type}</p>
-              <a
-                href={lesson.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                تحميل الملف ({(lesson.size / 1024).toFixed(1)} KB)
-              </a>
+              <p className="text-sm text-gray-600 dark:text-gray-300">نوع الملف: {lesson.format}</p>
+              {lesson.fileUrl && (
+                <a
+                  href={lesson.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  تحميل الملف ({lesson.size})
+                </a>
+              )}
             </li>
           ))}
         </ul>
