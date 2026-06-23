@@ -119,7 +119,7 @@ const CURRENT_USER_KEY = 'unishare_current_user';
 if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
   localStorage.setItem(INIT_USERS_KEY, JSON.stringify([
     { username: 'admin', password: 'admin', specialization: 'All', level: 'Admin', role: 'admin' },
-    { username: 'student', password: 'student', specialization: 'genie-informatique', level: 'S1', role: 'student' }
+    { username: 'student', password: 'student', specialization: 'genie-informatique', level: 'S1', role: 'teacher' }
   ]));
 }
 
