@@ -66,17 +66,10 @@ const handleReject = (id) => {
     window.location.reload();
   };
 
-  const handleApprove = (id) => {
-    approveResource(id);
-    // تحديث الحالة المحلية
-    setPendingUploads(pendingUploads.filter((r) => r.id !== id));
-  };
+// Duplicate handlers removed – using the earlier definitions with refreshPending
 
-  const handleReject = (id) => {
-    rejectResource(id);
-    // تحديث الحالة المحلية
-    setPendingUploads(pendingUploads.filter((r) => r.id !== id));
-  };
+
+
 
   if (!currentUser) return null;
 
