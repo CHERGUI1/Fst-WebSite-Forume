@@ -96,18 +96,40 @@ export default function Layout({ children }) {
                   {currentUser.username}
                 </NavLink>
               ) : (
-                <NavLink
-                  to="/auth"
-                  className={({ isActive }) => (
-                    `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                <>
+                  <NavLink
+                    to="/upload"
+                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
                       isActive
                         ? 'bg-blue-900 text-white dark:bg-blue-600'
                         : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
-                    }`
-                  )}
-                >
-                  Connexion
-                </NavLink>
+                    }`}
+                  >
+                    رفع درس
+                  </NavLink>
+                  <NavLink
+                    to="/moderation"
+                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-900 text-white dark:bg-blue-600'
+                        : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
+                    }`}
+                  >
+                    إدارة الدروس
+                  </NavLink>
+                  <NavLink
+                    to="/auth"
+                    className={({ isActive }) => (
+                      `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                        isActive
+                          ? 'bg-blue-900 text-white dark:bg-blue-600'
+                          : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
+                      }`
+                    )}
+                  >
+                    Connexion
+                  </NavLink>
+                </>
               )}
             </nav>
 
