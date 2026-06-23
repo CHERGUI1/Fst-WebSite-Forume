@@ -80,52 +80,31 @@ export default function Layout({ children }) {
               </NavLink>
               <span className="mx-1 h-5 w-px bg-slate-200 dark:bg-zinc-800" aria-hidden="true"></span>
               {currentUser ? (
-                <NavLink
-                  to="/profile"
-                  className={({ isActive }) => (
-                    `px-3 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
+                <>
+                  {/* رابط الملف الشخصي مع اسم المستخدم */}
+                  <NavLink
+                    to="/profile"
+                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
                       isActive
                         ? 'bg-blue-900 text-white dark:bg-blue-600'
                         : 'text-blue-900 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
-                    }`
-                  )}
-                >
-                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[10px] font-bold text-blue-900 dark:text-blue-300">
-                    {currentUser.username.substring(0, 2).toUpperCase()}
-                  </span>
-                  {currentUser.username}
-                </NavLink>
+                    }`}
+                  >
+                    <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[10px] font-bold text-blue-900 dark:text-blue-300">
+                      {currentUser.username.substring(0, 2).toUpperCase()}
+                    </span>
+                    {currentUser.username}
+                  </NavLink>
+                </>
               ) : (
                 <>
                   <NavLink
-                    to="/upload"
-                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                      isActive
-                        ? 'bg-blue-900 text-white dark:bg-blue-600'
-                        : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
-                    }`}
-                  >
-                    رفع درس
-                  </NavLink>
-                  <NavLink
-                    to="/moderation"
-                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                      isActive
-                        ? 'bg-blue-900 text-white dark:bg-blue-600'
-                        : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
-                    }`}
-                  >
-                    إدارة الدروس
-                  </NavLink>
-                  <NavLink
                     to="/auth"
-                    className={({ isActive }) => (
-                      `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                        isActive
-                          ? 'bg-blue-900 text-white dark:bg-blue-600'
-                          : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
-                      }`
-                    )}
+                    className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-900 text-white dark:bg-blue-600'
+                        : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-900 dark:hover:text-white'
+                    }`}
                   >
                     Connexion
                   </NavLink>

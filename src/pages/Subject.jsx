@@ -100,7 +100,7 @@ export default function Subject() {
         fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb.toFixed(0)} KB`;
       }
 
-      addUploadedResource(
+      const newRes = addUploadedResource(
         uploadTitle,
         uploadCategory,
         specId,
@@ -112,7 +112,14 @@ export default function Subject() {
         uploadFile?.name || null
       );
 
-      setUploadSuccess('تم رفع الملف بنجاح! سيظهر بعد موافقة المشرف.');
+      // Auto‑approve if the uploader is not a regular student
+      if (currentUser.role !== 'student') {
+        approveResource(newRes.id);
+        setUploadSuccess('تم رفع الملف وتمت الموافقة تلقائياً.');
+      } else {
+        setUploadSuccess('تم رفع الملف بنجاح! سيظهر بعد موافقة المشرف.');
+      }
+
       setUploadTitle('');
       setUploadValue('');
       setUploadFile(null);
