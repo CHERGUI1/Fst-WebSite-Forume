@@ -124,14 +124,7 @@ if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
 }
 
 // دوال إدارة المستخدمين
-export const updateUserRole = (username, newRole) => {
-  const users = getUsers();
-  const user = users.find(u => u.username === username);
-  if (user) {
-    user.role = newRole;
-    localStorage.setItem(INIT_USERS_KEY, JSON.stringify(users));
-  }
-};
+export const getUsers = () => {
   if (typeof window === 'undefined') return [];
   return JSON.parse(localStorage.getItem(INIT_USERS_KEY) || '[]');
 };

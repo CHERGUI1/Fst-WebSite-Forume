@@ -9,6 +9,8 @@ import Specialization from './pages/Specialization';
 import Subject from './pages/Subject';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
+import AdminUsers from './pages/AdminUsers';
+import AdminUploads from './pages/AdminUploads';
 
 export default function App() {
   return (

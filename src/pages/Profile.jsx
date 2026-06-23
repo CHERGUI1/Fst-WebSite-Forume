@@ -112,10 +112,46 @@ const handleReject = (id) => {
       {currentUser.role === 'admin' && (
         <section className="space-y-6">
           <div className="border-b border-slate-200 dark:border-zinc-800 pb-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Modération des Ressources</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Administration de la Plateforme</h2>
             <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              Validez ou rejetez les ressources téléversées par les étudiants.
+              Gérez les comptes d'utilisateurs et modérez les fichiers soumis.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <button
+              onClick={goToAdminUsers}
+              className="flex items-center justify-between p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition text-left cursor-pointer group"
+            >
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 text-lg">
+                  Gestion des comptes
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
+                  Modifier les rôles et permissions des utilisateurs
+                </p>
+              </div>
+              <span className="text-slate-400 dark:text-zinc-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition font-bold text-xl">&rarr;</span>
+            </button>
+
+            <button
+              onClick={goToAdminUploads}
+              className="flex items-center justify-between p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition text-left cursor-pointer group"
+            >
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 text-lg">
+                  Gestion des téléversements
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
+                  Voir tous les fichiers, les approuver, les rejeter ou les télécharger
+                </p>
+              </div>
+              <span className="text-slate-400 dark:text-zinc-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition font-bold text-xl">&rarr;</span>
+            </button>
+          </div>
+
+          <div className="border-b border-slate-200 dark:border-zinc-800 pt-6 pb-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Modération rapide des ressources</h3>
           </div>
 
           {pendingUploads.length === 0 ? (
