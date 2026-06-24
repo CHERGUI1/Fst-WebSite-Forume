@@ -121,7 +121,7 @@ export default function About() {
             Faire un don ❤️
           </a>
           <a
-            href="https://github.com"
+            href="https://github.com/CHERGUI1/Fst-WebSite-Forume"
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 font-semibold hover:bg-slate-200 dark:hover:bg-zinc-600 transition text-sm cursor-pointer border border-slate-200 dark:border-zinc-600"
