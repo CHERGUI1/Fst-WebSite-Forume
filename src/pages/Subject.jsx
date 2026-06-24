@@ -56,9 +56,7 @@ export default function Subject() {
   const detailPath = (category, resourceId) => `${subjectBasePath}/resources/${category}/${resourceId}`;
 
   const getCombinedResources = (category) => {
-    const staticRes = mockResources[category] || [];
-    const dynamicRes = approvedUploads.filter((r) => r.category === category);
-    return [...staticRes, ...dynamicRes];
+    return approvedUploads.filter((r) => r.category === category);
   };
 
   const handleUploadSubmit = async (e) => {
@@ -158,7 +156,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Cours Magistraux</h3>
           {combinedCourses.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucun cours disponible.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedCourses.map((resource) => (
@@ -171,7 +169,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Travaux Dirigés (TD)</h3>
           {combinedTds.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucun TD disponible.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedTds.map((resource) => (
@@ -184,7 +182,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Archives Examens & Contrôles</h3>
           {combinedExams.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucun examen disponible.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedExams.map((resource) => (
@@ -197,7 +195,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Vidéos & Playlists Recommandées</h3>
           {combinedVideos.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune vidéo disponible.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {combinedVideos.map((video) => (
