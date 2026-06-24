@@ -89,11 +89,20 @@ export const getSpecializationById = (id) => mockSpecializations.find((spec) => 
 
 export const getSemesterById = (id) => mockSemesters.find((semester) => semester.id === id);
 
-export const getSubjectsForSemester = (specId, semesterId) => mockSubjects[specId]?.[semesterId] || [];
+export const getSubjectsData = () => {
+  if (typeof window === 'undefined') return mockSubjects;
+  const data = localStorage.getItem('unishare_subjects');
+  return data ? JSON.parse(data) : mockSubjects;
+};
 
-export const getSubjectById = (specId, semesterId, subjectId) => (
-  getSubjectsForSemester(specId, semesterId).find((subject) => subject.id === subjectId)
-);
+export const getSubjectsForSemester = (specId, semesterId) => {
+  const data = getSubjectsData();
+  return data[specId]?.[semesterId] || [];
+};
+
+export const getSubjectById = (specId, semesterId, subjectId) => {
+  return getSubjectsForSemester(specId, semesterId).find((subject) => subject.id === subjectId);
+};
 
 export const getResourceByCategoryAndId = (category, resourceId) => {
   const staticRes = mockResources[category]?.find((resource) => String(resource.id) === String(resourceId));
@@ -114,6 +123,7 @@ const INIT_USERS_KEY = 'unishare_users';
 const INIT_UPLOADS_KEY = 'unishare_uploads';
 const INIT_COMMENTS_KEY = 'unishare_comments';
 const CURRENT_USER_KEY = 'unishare_current_user';
+const INIT_SUBJECTS_KEY = 'unishare_subjects';
 
 // إنشاء حسابات افتراضية في البداية (مشرف وطالب تجريبي)
 if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
@@ -121,6 +131,10 @@ if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
     { username: 'admin', password: 'admin', specialization: 'All', level: 'Admin', role: 'admin' },
     { username: 'student', password: 'student', specialization: 'genie-informatique', level: 'S1', role: 'teacher' }
   ]));
+}
+
+if (typeof window !== 'undefined' && !localStorage.getItem(INIT_SUBJECTS_KEY)) {
+  localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(mockSubjects));
 }
 
 // دوال إدارة المستخدمين
@@ -252,4 +266,46 @@ export const addSubjectComment = (subjectId, username, text) => {
   allComments.push(newComment);
   localStorage.setItem(INIT_COMMENTS_KEY, JSON.stringify(allComments));
   return newComment;
+};
+
+export const addSubject = (specId, semesterId, id, name) => {
+  const data = getSubjectsData();
+  if (!data[specId]) data[specId] = {};
+  if (!data[specId][semesterId]) data[specId][semesterId] = [];
+  data[specId][semesterId].push({ id, name });
+  localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(data));
+};
+
+export const updateSubjectName = (specId, semesterId, subjectId, newName) => {
+  const data = getSubjectsData();
+  if (data[specId]?.[semesterId]) {
+    const subject = data[specId][semesterId].find((s) => s.id === subjectId);
+    if (subject) {
+      subject.name = newName;
+      localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(data));
+    }
+  }
+};
+
+export const deleteSubject = (specId, semesterId, subjectId) => {
+  // 1. Delete subject itself
+  const data = getSubjectsData();
+  if (data[specId]?.[semesterId]) {
+    data[specId][semesterId] = data[specId][semesterId].filter((s) => s.id !== subjectId);
+    localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(data));
+  }
+
+  // 2. Cascading delete from uploads
+  const uploads = getUploadedResources();
+  const filteredUploads = uploads.filter(
+    (r) => !(r.subjectId === subjectId && r.specId === specId && r.semesterId === semesterId)
+  );
+  localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(filteredUploads));
+
+  // 3. Cascading delete from comments
+  if (typeof window !== 'undefined') {
+    const comments = JSON.parse(localStorage.getItem(INIT_COMMENTS_KEY) || '[]');
+    const filteredComments = comments.filter((c) => c.subjectId !== subjectId);
+    localStorage.setItem(INIT_COMMENTS_KEY, JSON.stringify(filteredComments));
+  }
 };

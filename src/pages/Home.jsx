@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { mockSpecializations, mockSubjects, mockResources, resourceCategoryLabels } from '../data/mockData';
+import { mockSpecializations, mockResources, resourceCategoryLabels, getSubjectsData } from '../data/mockData';
 
 const cycleLabels = {
   deust: 'DEUST',
@@ -19,7 +19,7 @@ export default function Home() {
   // تهيئة البيانات للبحث وتسطيحها (Flattening)
   const { allSubjects, allResources } = useMemo(() => {
     const subjects = [];
-    Object.entries(mockSubjects).forEach(([specId, semesters]) => {
+    Object.entries(getSubjectsData()).forEach(([specId, semesters]) => {
       const spec = mockSpecializations.find((s) => s.id === specId);
       if (!spec) return;
       Object.entries(semesters).forEach(([semesterId, list]) => {
