@@ -1,13 +1,25 @@
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
-import { getSemestersForCycle, getSpecializationById } from '../data/mockData';
+import { getSemestersForCycle, getFilieres as getLocalFilieres } from '../data/mockData';
+import { getFilieres } from '../lib/supabaseService';
 
 export default function Specialization() {
   const { specId } = useParams();
   const [searchParams] = useSearchParams();
   const cycleId = searchParams.get('cycle') || 'deust';
-  const spec = getSpecializationById(specId);
+  const [spec, setSpec] = useState(() => getLocalFilieres().find((item) => item.id === specId));
+  const [loading, setLoading] = useState(true);
   const semesters = getSemestersForCycle(cycleId);
 
+  useEffect(() => {
+    let active = true;
+    getFilieres(cycleId).then((items) => { if (active) setSpec(items.find((item) => item.id === specId) || null); })
+      .catch((error) => console.error('Error loading filière:', error))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [specId, cycleId]);
+
+  if (loading) return <p className="text-center py-10 text-slate-500">Chargement...</p>;
   if (!spec) return <Navigate to="/" replace />;
 
   return (

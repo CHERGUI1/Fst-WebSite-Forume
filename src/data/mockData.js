@@ -18,6 +18,30 @@ export const getSemestersForCycle = (cycleId) => (
   cycleId === 'licence' ? mockSemesters : mockSemesters.slice(0, 4)
 );
 
+const FILIERES_KEY = 'unishare_filieres';
+const defaultFilieres = mockSpecializations.flatMap((item) => [
+  { ...item, cycleId: 'deust' },
+  { ...item, cycleId: 'licence' },
+]);
+export const getFilieres = (cycleId = null) => {
+  if (typeof window === 'undefined') return mockSpecializations;
+  const saved = localStorage.getItem(FILIERES_KEY);
+  const filieres = saved ? JSON.parse(saved) : defaultFilieres;
+  return cycleId ? filieres.filter((item) => item.cycleId === cycleId) : filieres;
+};
+
+export const saveLocalFiliere = (filiere) => {
+  const items = getFilieres();
+  const next = items.some((item) => item.id === filiere.id)
+    ? items.map((item) => item.id === filiere.id ? filiere : item)
+    : [...items, filiere];
+  localStorage.setItem(FILIERES_KEY, JSON.stringify(next));
+};
+
+export const deleteLocalFiliere = (id) => {
+  localStorage.setItem(FILIERES_KEY, JSON.stringify(getFilieres().filter((item) => item.id !== id)));
+};
+
 export const mockSubjects = {
   'genie-informatique': {
     S1: [

@@ -11,7 +11,7 @@ export default function ResourceDetail() {
   const { specId, semesterId, subjectId, category, resourceId } = useParams();
   const [searchParams] = useSearchParams();
   const cycleId = searchParams.get('cycle') || 'deust';
-  const spec = getSpecializationById(specId);
+  const spec = getSpecializationById(specId) || { id: specId, name: specId };
   const semester = getSemesterById(semesterId);
   const subject = getSubjectById(specId, semesterId, subjectId);
   const resource = getResourceByCategoryAndId(category, resourceId);

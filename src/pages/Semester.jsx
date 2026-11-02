@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   getSemesterById,
+  getSemestersForCycle,
   getSpecializationById,
   getSubjectsForSemester,
   getCurrentUser,
@@ -14,7 +15,7 @@ export default function Semester() {
   const { specId, semesterId } = useParams();
   const [searchParams] = useSearchParams();
   const cycleId = searchParams.get('cycle') || 'deust';
-  const spec = getSpecializationById(specId);
+  const spec = getSpecializationById(specId) || { id: specId, name: specId };
   const semester = getSemesterById(semesterId);
 
   const [currentUser] = useState(() => getCurrentUser());
@@ -22,6 +23,9 @@ export default function Semester() {
   const subjectsList = getSubjectsForSemester(specId, semesterId);
 
   if (!spec || !semester) return <Navigate to="/" replace />;
+  if (!getSemestersForCycle(cycleId).some((item) => item.id === semesterId)) {
+    return <Navigate to={`/specializations/${specId}?cycle=${cycleId}`} replace />;
+  }
 
   const handleAddSubject = () => {
     const name = window.prompt("Nom du nouveau module :");

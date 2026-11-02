@@ -179,6 +179,13 @@ export default function Profile() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <button
+              onClick={() => navigate('/admin/filieres')}
+              className="flex items-center justify-between p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition text-left cursor-pointer group"
+            >
+              <div><h3 className="font-bold text-slate-800 dark:text-zinc-100 group-hover:text-blue-600 text-lg">Gestion des filières</h3><p className="text-sm text-slate-500 mt-1">Ajouter, modifier ou supprimer les filières</p></div>
+              <span className="font-bold text-xl text-slate-400">&rarr;</span>
+            </button>
+            <button
               onClick={goToAdminUsers}
               className="flex items-center justify-between p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition text-left cursor-pointer group"
             >

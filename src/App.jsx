@@ -11,6 +11,7 @@ import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
 import AdminUploads from './pages/AdminUploads';
+import AdminFilieres from './pages/AdminFilieres';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/specializations/:specId/semesters/:semesterId/subjects/:subjectId/resources/:category/:resourceId" element={<ResourceDetail />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/uploads" element={<AdminUploads />} />
+          <Route path="/admin/filieres" element={<AdminFilieres />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

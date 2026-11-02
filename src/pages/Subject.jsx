@@ -3,7 +3,7 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import ResourceCard from '../components/ResourceCard';
 import {
   getSemesterById,
-  getSpecializationById,
+  getSemestersForCycle,
   getSubjectById,
   getCurrentUser,
   getApprovedResources,
@@ -30,7 +30,6 @@ export default function Subject() {
 function SubjectContent({ specId, semesterId, subjectId }) {
   const [searchParams] = useSearchParams();
   const cycleId = searchParams.get('cycle') || 'deust';
-  const spec = getSpecializationById(specId);
   const semester = getSemesterById(semesterId);
   const subject = getSubjectById(specId, semesterId, subjectId);
   const [currentUser, setCurrentUser] = useState(() => (
@@ -102,7 +101,10 @@ function SubjectContent({ specId, semesterId, subjectId }) {
     };
   }, [specId, semesterId, subjectId]);
 
-  if (!spec || !semester || !subject) return <Navigate to="/" replace />;
+  if (!semester || !subject) return <Navigate to="/" replace />;
+  if (!getSemestersForCycle(cycleId).some((item) => item.id === semesterId)) {
+    return <Navigate to={`/specializations/${specId}?cycle=${cycleId}`} replace />;
+  }
 
   const detailPath = (category, resourceId) => (
     `/specializations/${specId}/semesters/${semesterId}/subjects/${subjectId}/resources/${category}/${resourceId}?cycle=${cycleId}`

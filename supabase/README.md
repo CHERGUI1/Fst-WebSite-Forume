@@ -2,7 +2,7 @@
 
 1. Create a Supabase project and open its SQL Editor.
 2. Run `migrations/202611010001_initial_schema.sql`.
-3. If the project was already set up, run the newer migrations in `migrations/` in date order. In particular, run `202611020001_fix_profile_role_policy.sql` to remove the recursive profile policy that blocks role changes.
+3. If the project was already set up, run the newer migrations in `migrations/` in date order. Run `202611020001_fix_profile_role_policy.sql` to remove the recursive profile policy that blocks role changes, then `202611030001_manage_filieres.sql` to enable shared filière management.
 4. Create the first account using the app, then promote it to admin from the SQL Editor:
 
 ```sql

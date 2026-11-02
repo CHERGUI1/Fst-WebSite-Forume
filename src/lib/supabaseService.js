@@ -1,6 +1,48 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { mockSpecializations } from '../data/mockData';
 
 const CURRENT_USER_KEY = 'unishare_current_user';
+
+const mapFiliere = (row) => ({ id: row.id, cycleId: row.cycle_id, name: row.name, description: row.description || '', modulesCount: row.modules_count || 0 });
+
+export async function getFilieres(cycleId = null) {
+  if (!isSupabaseConfigured) {
+    const saved = JSON.parse(localStorage.getItem('unishare_filieres') || 'null');
+    const items = saved || mockSpecializations.flatMap((item) => [{ ...item, cycleId: 'deust' }, { ...item, cycleId: 'licence' }]);
+    return cycleId ? items.filter((item) => item.cycleId === cycleId) : items;
+  }
+  let query = supabase.from('filieres').select('*').order('name');
+  if (cycleId) query = query.eq('cycle_id', cycleId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data.map(mapFiliere);
+}
+
+export async function saveFiliere(filiere, original = null) {
+  if (!isSupabaseConfigured) {
+    const items = JSON.parse(localStorage.getItem('unishare_filieres') || 'null') || mockSpecializations.flatMap((item) => [{ ...item, cycleId: 'deust' }, { ...item, cycleId: 'licence' }]);
+    const updated = items.some((item) => item.id === original?.id && item.cycleId === original?.cycleId)
+      ? items.map((item) => item.id === original.id && item.cycleId === original.cycleId ? filiere : item)
+      : [...items, filiere];
+    localStorage.setItem('unishare_filieres', JSON.stringify(updated));
+    return;
+  }
+  const row = { id: filiere.id, cycle_id: filiere.cycleId, name: filiere.name, description: filiere.description, modules_count: filiere.modulesCount || 0 };
+  const { error } = original
+    ? await supabase.from('filieres').update(row).eq('id', original.id).eq('cycle_id', original.cycleId)
+    : await supabase.from('filieres').insert(row);
+  if (error) throw error;
+}
+
+export async function removeFiliere(id, cycleId) {
+  if (!isSupabaseConfigured) {
+    const items = JSON.parse(localStorage.getItem('unishare_filieres') || 'null') || mockSpecializations.flatMap((item) => [{ ...item, cycleId: 'deust' }, { ...item, cycleId: 'licence' }]);
+    localStorage.setItem('unishare_filieres', JSON.stringify(items.filter((item) => item.id !== id || item.cycleId !== cycleId)));
+    return;
+  }
+  const { error } = await supabase.from('filieres').delete().eq('id', id).eq('cycle_id', cycleId);
+  if (error) throw error;
+}
 
 // Helper to sanitize username into email format for Supabase Auth
 export const formatEmail = (usernameOrEmail) => {

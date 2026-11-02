@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   mockSpecializations,
+  getFilieres as getLocalFilieres,
   resourceCategoryLabels,
   getSubjectsData,
   getUploadedResources,
 } from '../data/mockData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { getSearchableApprovedResources } from '../lib/supabaseService';
+import { getFilieres } from '../lib/supabaseService';
 
 const cycleLabels = {
   deust: 'DEUST',
@@ -23,6 +25,14 @@ export default function Home() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [allResources, setAllResources] = useState([]);
+  const [filieres, setFilieres] = useState(() => getLocalFilieres(cycleId));
+
+  useEffect(() => {
+    let active = true;
+    getFilieres(cycleId).then((items) => { if (active) setFilieres(items); })
+      .catch((error) => console.error('Error loading filières:', error));
+    return () => { active = false; };
+  }, [cycleId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -273,7 +283,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockSpecializations.map((spec) => (
+            {filieres.map((spec) => (
               <Link
                 key={spec.id}
                 to={`/specializations/${spec.id}?cycle=${cycleId}`}
