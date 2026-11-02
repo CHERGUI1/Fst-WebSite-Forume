@@ -37,11 +37,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     const init = async () => {
-      let user = getCurrentUser();
-      if (isSupabaseConfigured) {
-        const profile = await getActiveProfile();
-        if (profile) user = profile;
-      }
+      const user = isSupabaseConfigured ? await getActiveProfile() : getCurrentUser();
       setCurrentUser(user);
 
       if (!user || user.role !== 'admin') {

@@ -36,12 +36,7 @@ export default function Profile() {
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      let user = getCurrentUser();
-
-      if (isSupabaseConfigured) {
-        const profile = await getActiveProfile();
-        if (profile) user = profile;
-      }
+      const user = isSupabaseConfigured ? await getActiveProfile() : getCurrentUser();
 
       if (!user) {
         navigate('/auth');

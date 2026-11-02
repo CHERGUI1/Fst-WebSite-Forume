@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, registerUser, mockSpecializations } from '../data/mockData';
-import { signInUser, signUpUser } from '../lib/supabaseService';
-import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  requestPasswordReset,
+  resendSignupConfirmation,
+  signInUser,
+  signUpUser,
+  updatePassword,
+} from '../lib/supabaseService';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
+  const [isRecovery, setIsRecovery] = useState(() => (
+    new URLSearchParams(window.location.search).get('mode') === 'recovery' ||
+    window.location.hash.includes('type=recovery')
+  ));
+  const [confirmationPending, setConfirmationPending] = useState(false);
 
   // حقول الحساب
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [specialization, setSpecialization] = useState('genie-informatique');
   const [level, setLevel] = useState('S1');
 
@@ -24,32 +36,58 @@ export default function Auth() {
 
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured) return undefined;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true);
+        setError('');
+        setSuccess('Choisissez un nouveau mot de passe pour votre compte.');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (isLogin) {
-      if (!email.trim() || !password.trim()) {
-        setError('Veuillez remplir votre e-mail et mot de passe.');
+    if (isRecovery) {
+      if (password.length < 6) {
+        setError('Le nouveau mot de passe doit contenir au moins 6 caractères.');
         return;
       }
-    } else {
-      if (!username.trim() || !email.trim() || !password.trim()) {
-        setError('Veuillez remplir tous les champs obligatoires.');
+      if (password !== passwordConfirmation) {
+        setError('Les mots de passe ne correspondent pas.');
         return;
       }
+    } else if (isLogin && (!email.trim() || !password.trim())) {
+      setError('Veuillez remplir votre e-mail et mot de passe.');
+      return;
+    } else if (!isLogin && (!username.trim() || !email.trim() || !password.trim())) {
+      setError('Veuillez remplir tous les champs obligatoires.');
+      return;
     }
 
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (isRecovery) {
+        await updatePassword(password);
+        setIsRecovery(false);
+        setPassword('');
+        setPasswordConfirmation('');
+        setSuccess('Mot de passe modifié. Vous pouvez maintenant vous connecter.');
+        navigate('/auth', { replace: true });
+      } else if (isLogin) {
         // تسجيل الدخول بالبريد الإلكتروني
         if (isSupabaseConfigured) {
           await signInUser(email, password);
         } else {
-          loginUser(username, password);
+          loginUser(email, password);
         }
 
         setSuccess('Connexion réussie ! Redirection...');
@@ -61,24 +99,69 @@ export default function Auth() {
       } else {
         // تسجيل حساب جديد
         if (isSupabaseConfigured) {
-          await signUpUser(username, password, specialization, level, email.trim());
+          const result = await signUpUser(username, password, specialization, level, email.trim());
+          setConfirmationPending(result.requiresEmailConfirmation);
+          setSuccess(result.requiresEmailConfirmation
+            ? `Compte créé. Un lien de confirmation a été envoyé à ${email.trim()}. Vérifiez aussi le dossier spam.`
+            : 'Compte créé avec succès. Vous pouvez maintenant vous connecter.');
         } else {
           registerUser(username, password, specialization, level);
+          setConfirmationPending(false);
+          setSuccess('Compte local créé. Les e-mails de confirmation ne sont pas disponibles en mode local.');
         }
 
-        setSuccess('Compte créé avec succès ! Veuillez vérifier votre boîte de réception si une confirmation est requise.');
         setIsLogin(true);
         setPassword('');
+        setPasswordConfirmation('');
       }
     } catch (err) {
       console.error(err);
       if (err.message?.includes('Email not confirmed')) {
-        setError('Votre adresse e-mail n’est pas encore confirmée. Veuillez vérifier votre boîte e-mail ou contacter l’administrateur.');
+        setConfirmationPending(true);
+        setError('Votre adresse e-mail n’est pas encore confirmée. Renvoyez le lien de confirmation ci-dessous.');
       } else if (err.message?.includes('Invalid login credentials')) {
-        setError('Nom d’utilisateur/e-mail ou mot de passe incorrect.');
+        setError('Adresse e-mail ou mot de passe incorrect.');
       } else {
         setError(err.message || 'Une erreur est survenue.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    setError('');
+    setSuccess('');
+    if (!email.trim()) {
+      setError('Saisissez votre adresse e-mail pour renvoyer le lien.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await resendSignupConfirmation(email);
+      setSuccess(`Un nouveau lien de confirmation a été envoyé à ${email.trim()}.`);
+    } catch (err) {
+      setError(err.message || 'Impossible de renvoyer le lien de confirmation.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async () => {
+    setError('');
+    setSuccess('');
+    if (!email.trim()) {
+      setError('Saisissez votre adresse e-mail pour recevoir le lien de réinitialisation.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await requestPasswordReset(email);
+      setSuccess(`Si un compte correspond à cette adresse, un lien de réinitialisation a été envoyé à ${email.trim()}.`);
+    } catch (err) {
+      setError(err.message || 'Impossible d’envoyer le lien de réinitialisation.');
     } finally {
       setLoading(false);
     }
@@ -95,12 +178,20 @@ export default function Auth() {
             U
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-slate-900 dark:text-white">
-            {isLogin ? 'Connexion à UniShare' : 'Créer un compte'}
+            {isRecovery ? 'Réinitialiser le mot de passe' : isLogin ? 'Connexion à UniShare' : 'Créer un compte'}
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">
-            {isLogin ? 'Accédez rapidement à vos ressources' : 'Rejoignez la communauté étudiante'}
+            {isRecovery
+              ? 'Choisissez un nouveau mot de passe pour votre compte.'
+              : isLogin ? 'Accédez rapidement à vos ressources' : 'Rejoignez la communauté étudiante'}
           </p>
         </div>
+
+        {!isSupabaseConfigured && (
+          <div className="p-3 text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900 rounded-xl text-center">
+            Mode local : la confirmation et la récupération par e-mail ne sont pas disponibles.
+          </div>
+        )}
 
         {error && (
           <div className="p-3 text-sm bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-xl text-center">
@@ -116,23 +207,25 @@ export default function Auth() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* حقل البريد الإلكتروني — يظهر دائماً */}
-            <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                Adresse e-mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="etudiant@univ.edu"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
-              />
-            </div>
+            {!isRecovery && (
+              <div>
+                <label htmlFor="email" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
+                  {isSupabaseConfigured ? 'Adresse e-mail' : 'Nom d’utilisateur (mode local)'}
+                </label>
+                <input
+                  id="email"
+                  type={isSupabaseConfigured ? 'email' : 'text'}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isSupabaseConfigured ? 'etudiant@univ.edu' : 'Ex: student'}
+                  required
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
+                />
+              </div>
+            )}
 
             {/* اسم المستخدم — فقط عند إنشاء حساب جديد */}
-            {!isLogin && (
+            {!isLogin && !isRecovery && (
               <div>
                 <label htmlFor="username" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
                   Nom d'utilisateur
@@ -150,7 +243,7 @@ export default function Auth() {
 
             <div>
               <label htmlFor="password" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                Mot de passe
+                {isRecovery ? 'Nouveau mot de passe' : 'Mot de passe'}
               </label>
               <input
                 id="password"
@@ -158,11 +251,30 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete={isRecovery ? 'new-password' : isLogin ? 'current-password' : 'new-password'}
+                required
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
               />
             </div>
 
-            {!isLogin && (
+            {isRecovery && (
+              <div>
+                <label htmlFor="password-confirmation" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
+                  Confirmer le nouveau mot de passe
+                </label>
+                <input
+                  id="password-confirmation"
+                  type="password"
+                  value={passwordConfirmation}
+                  onChange={(e) => setPasswordConfirmation(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
+                />
+              </div>
+            )}
+
+            {!isLogin && !isRecovery && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -205,21 +317,49 @@ export default function Auth() {
             )}
           </div>
 
+          {isLogin && !isRecovery && isSupabaseConfigured && (
+            <div className="flex flex-col items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={handlePasswordResetRequest}
+                disabled={loading}
+                className="text-blue-900 dark:text-blue-400 font-semibold hover:underline disabled:opacity-60"
+              >
+                Mot de passe oublié ? Recevoir un lien de réinitialisation
+              </button>
+              {confirmationPending && (
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  disabled={loading}
+                  className="text-blue-900 dark:text-blue-400 font-semibold hover:underline disabled:opacity-60"
+                >
+                  Renvoyer l’e-mail de confirmation
+                </button>
+              )}
+            </div>
+          )}
+
           <div>
             <button
               type="submit"
               disabled={loading}
               className="w-full px-5 py-3 rounded-xl bg-blue-900 dark:bg-blue-600 text-white font-semibold hover:bg-blue-800 dark:hover:bg-blue-500 transition shadow-sm hover:shadow-md text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? 'Chargement en cours...' : isLogin ? 'Se connecter' : 'Créer un compte'}
+              {loading
+                ? 'Chargement en cours...'
+                : isRecovery ? 'Enregistrer le nouveau mot de passe'
+                  : isLogin ? 'Se connecter' : 'Créer un compte'}
             </button>
           </div>
         </form>
 
+        {!isRecovery && (
         <div className="text-center pt-4 border-t border-slate-100 dark:border-zinc-700/50">
           <button
             onClick={() => {
               setIsLogin(!isLogin);
+              setConfirmationPending(false);
               setError('');
               setSuccess('');
             }}
@@ -228,6 +368,24 @@ export default function Auth() {
             {isLogin ? "Pas encore de compte ? S'inscrire" : 'Déjà inscrit ? Se connecter'}
           </button>
         </div>
+        )}
+
+        {isRecovery && (
+          <div className="text-center pt-4 border-t border-slate-100 dark:border-zinc-700/50">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRecovery(false);
+                setError('');
+                setSuccess('');
+                navigate('/auth', { replace: true });
+              }}
+              className="text-xs text-blue-900 dark:text-blue-400 font-semibold hover:underline"
+            >
+              Retour à la connexion
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   getSemesterById,
@@ -16,13 +16,8 @@ export default function Semester() {
   const semester = getSemesterById(semesterId);
 
   const [currentUser] = useState(() => getCurrentUser());
-  const [subjectsList, setSubjectsList] = useState([]);
-
-  useEffect(() => {
-    if (spec && semester) {
-      setSubjectsList(getSubjectsForSemester(specId, semesterId));
-    }
-  }, [specId, semesterId, spec, semester]);
+  const [, refreshSubjects] = useState(0);
+  const subjectsList = getSubjectsForSemester(specId, semesterId);
 
   if (!spec || !semester) return <Navigate to="/" replace />;
 
@@ -41,7 +36,7 @@ export default function Semester() {
     }
 
     addSubject(specId, semesterId, id, name.trim());
-    setSubjectsList(getSubjectsForSemester(specId, semesterId));
+    refreshSubjects((revision) => revision + 1);
   };
 
   const handleEditSubject = (e, subjectId, currentName) => {
@@ -51,7 +46,7 @@ export default function Semester() {
     if (!newName || !newName.trim() || newName.trim() === currentName) return;
 
     updateSubjectName(specId, semesterId, subjectId, newName.trim());
-    setSubjectsList(getSubjectsForSemester(specId, semesterId));
+    refreshSubjects((revision) => revision + 1);
   };
 
   const handleDeleteSubject = (e, subjectId, subjectName) => {
@@ -64,7 +59,7 @@ export default function Semester() {
     if (!confirmDelete) return;
 
     deleteSubject(specId, semesterId, subjectId);
-    setSubjectsList(getSubjectsForSemester(specId, semesterId));
+    refreshSubjects((revision) => revision + 1);
   };
 
   return (

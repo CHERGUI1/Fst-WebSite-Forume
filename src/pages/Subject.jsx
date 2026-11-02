@@ -7,6 +7,7 @@ import {
   getSubjectById,
   getCurrentUser,
   getApprovedResources,
+  approveResource,
   addUploadedResource,
   getSubjectComments,
   addSubjectComment,
@@ -21,16 +22,27 @@ import {
 } from '../lib/supabaseService';
 
 export default function Subject() {
-  const { specId, semesterId, subjectId } = useParams();
+  const params = useParams();
+  const subjectKey = `${params.specId}-${params.semesterId}-${params.subjectId}`;
+  return <SubjectContent key={subjectKey} {...params} />;
+}
+
+function SubjectContent({ specId, semesterId, subjectId }) {
   const spec = getSpecializationById(specId);
   const semester = getSemesterById(semesterId);
   const subject = getSubjectById(specId, semesterId, subjectId);
   const subjectBasePath = `/specializations/${specId}/semesters/${semesterId}/subjects/${subjectId}`;
 
-  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
-  const [approvedUploads, setApprovedUploads] = useState([]);
-  const [comments, setComments] = useState([]);
-  const [loadingResources, setLoadingResources] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => (
+    isSupabaseConfigured ? null : getCurrentUser()
+  ));
+  const [approvedUploads, setApprovedUploads] = useState(() => (
+    isSupabaseConfigured ? [] : getApprovedResources(subjectId)
+  ));
+  const [comments, setComments] = useState(() => (
+    isSupabaseConfigured ? [] : getSubjectComments(subjectId)
+  ));
+  const [loadingResources, setLoadingResources] = useState(isSupabaseConfigured);
 
   // حالات نموذج الرفع
   const [uploadTitle, setUploadTitle] = useState('');
@@ -46,21 +58,27 @@ export default function Subject() {
 
   // مزامنة الملف الشخصي
   useEffect(() => {
-    getActiveProfile().then((p) => {
-      if (p) setCurrentUser(p);
-    });
+    let isMounted = true;
+    getActiveProfile()
+      .then((profile) => {
+        if (isMounted) setCurrentUser(profile);
+      })
+      .catch((error) => {
+        console.error('Error loading active profile:', error);
+        if (isMounted) setCurrentUser(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // جلب الموارد والتعليقات من Supabase عند فتح أو تغيير المادة
   useEffect(() => {
     let isMounted = true;
+    if (!isSupabaseConfigured) return undefined;
+
     const loadData = async () => {
-      if (!isSupabaseConfigured) {
-        setApprovedUploads(getApprovedResources(subjectId));
-        setComments(getSubjectComments(subjectId));
-        return;
-      }
-      setLoadingResources(true);
       try {
         const [cloudRes, cloudComments] = await Promise.all([
           getSubjectApprovedResources(subjectId),
@@ -78,18 +96,11 @@ export default function Subject() {
     };
 
     loadData();
-    setUploadTitle('');
-    setUploadCategory('courses');
-    setUploadValue('');
-    setUploadFile(null);
-    setUploadSuccess('');
-    setUploadError('');
-    setCommentText('');
 
     return () => {
       isMounted = false;
     };
-  }, [subjectId]);
+  }, [specId, semesterId, subjectId]);
 
   if (!spec || !semester || !subject) return <Navigate to="/" replace />;
 

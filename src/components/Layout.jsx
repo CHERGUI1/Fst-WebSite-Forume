@@ -15,7 +15,10 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     getActiveProfile().then((p) => {
-      if (p) setCurrentUser(p);
+      setCurrentUser(p);
+    }).catch((error) => {
+      console.error('Error loading active profile:', error);
+      setCurrentUser(null);
     });
   }, []);
 

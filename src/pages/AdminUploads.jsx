@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getUploadedResources,
@@ -21,10 +21,9 @@ import {
 export default function AdminUploads() {
   const navigate = useNavigate();
   const [uploads, setUploads] = useState([]);
-  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [loading, setLoading] = useState(true);
 
-  const fetchUploads = async (user) => {
+  const fetchUploads = useCallback(async () => {
     setLoading(true);
     try {
       if (isSupabaseConfigured) {
@@ -38,14 +37,13 @@ export default function AdminUploads() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
-      let user = currentUser;
+      let user = getCurrentUser();
       if (isSupabaseConfigured) {
         user = await getActiveProfile();
-        setCurrentUser(user);
       }
 
       if (!user || user.role !== 'admin') {
@@ -53,11 +51,11 @@ export default function AdminUploads() {
         return;
       }
 
-      await fetchUploads(user);
+      await fetchUploads();
     };
 
     init();
-  }, [navigate]);
+  }, [fetchUploads, navigate]);
 
   const handleApprove = async (id) => {
     try {
@@ -66,7 +64,7 @@ export default function AdminUploads() {
       } else {
         approveResource(id);
       }
-      await fetchUploads(currentUser);
+      await fetchUploads();
     } catch (err) {
       alert(err.message || 'Erreur lors de l’approbation.');
     }
@@ -80,7 +78,7 @@ export default function AdminUploads() {
       } else {
         rejectResource(id, reason);
       }
-      await fetchUploads(currentUser);
+      await fetchUploads();
     } catch (err) {
       alert(err.message || 'Erreur lors du rejet.');
     }
@@ -94,7 +92,7 @@ export default function AdminUploads() {
         } else {
           deleteUploadedResource(up.id);
         }
-        await fetchUploads(currentUser);
+        await fetchUploads();
       } catch (err) {
         alert(err.message || 'Erreur lors de la suppression.');
       }

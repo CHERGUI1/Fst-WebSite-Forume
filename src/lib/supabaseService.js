@@ -31,7 +31,6 @@ export async function signUpUser(username, password, specialization, level, cust
 
   if (error) throw error;
 
-  // Fetch or construct profile
   const profile = {
     id: data.user?.id,
     username: username.trim(),
@@ -40,8 +39,47 @@ export async function signUpUser(username, password, specialization, level, cust
     role: 'student',
   };
 
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
-  return { user: data.user, profile };
+  if (data.session) {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
+  } else {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  }
+
+  return {
+    user: data.user,
+    profile,
+    requiresEmailConfirmation: !data.session,
+  };
+}
+
+export async function resendSignupConfirmation(email) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email.trim().toLowerCase(),
+    options: { emailRedirectTo: `${window.location.origin}/auth` },
+  });
+
+  if (error) throw error;
+}
+
+export async function requestPasswordReset(email) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
+
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo: `${window.location.origin}/auth?mode=recovery` }
+  );
+
+  if (error) throw error;
+}
+
+export async function updatePassword(password) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
 }
 
 export async function signInUser(email, password) {
