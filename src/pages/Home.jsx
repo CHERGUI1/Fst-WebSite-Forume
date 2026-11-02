@@ -33,6 +33,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [allResources, setAllResources] = useState([]);
   const [filieres, setFilieres] = useState(() => getLocalFilieres(cycleId));
+  const [filieresError, setFilieresError] = useState('');
 
   // حالات نافذة إدارة الشعب (Modal)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,9 +55,15 @@ export default function Home() {
     let active = true;
     getFilieres(cycleId)
       .then((items) => {
-        if (active) setFilieres(items);
+        if (active) {
+          setFilieres(items);
+          setFilieresError('');
+        }
       })
-      .catch((error) => console.error('Error loading filières:', error));
+      .catch((error) => {
+        console.error('Error loading filières:', error);
+        if (active) setFilieresError('Impossible de charger la liste actualisée des filières. Réessayez plus tard.');
+      });
     return () => {
       active = false;
     };
@@ -403,6 +410,12 @@ export default function Home() {
               </button>
             )}
           </div>
+
+          {filieresError && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              {filieresError}
+            </p>
+          )}
 
           {filieres.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl text-slate-400 dark:text-zinc-500">

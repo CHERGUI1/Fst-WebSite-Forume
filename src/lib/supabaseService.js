@@ -15,47 +15,32 @@ export async function getFilieres(cycleId = null) {
   if (!isSupabaseConfigured) {
     return getLocalFilieres(cycleId);
   }
-  try {
-    let query = supabase.from('filieres').select('*').order('name');
-    if (cycleId) query = query.eq('cycle_id', cycleId);
-    const { data, error } = await query;
-    if (error) throw error;
-    if (data && data.length > 0) return data.map(mapFiliere);
-    return getLocalFilieres(cycleId);
-  } catch {
-    return getLocalFilieres(cycleId);
-  }
+  let query = supabase.from('filieres').select('*').order('name');
+  if (cycleId) query = query.eq('cycle_id', cycleId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).map(mapFiliere);
 }
 
 export async function saveFiliere(filiere, original = null) {
-  saveLocalFiliere(filiere, original);
-  if (!isSupabaseConfigured) return;
-  try {
-    const row = {
-      id: filiere.id,
-      cycle_id: filiere.cycleId,
-      name: filiere.name,
-      description: filiere.description,
-      modules_count: filiere.modulesCount || 0,
-    };
-    if (original) {
-      await supabase.from('filieres').update(row).eq('id', original.id).eq('cycle_id', original.cycleId);
-    } else {
-      await supabase.from('filieres').insert(row);
-    }
-  } catch (e) {
-    console.warn('Filiere saved locally (Supabase sync optional):', e);
-  }
+  if (!isSupabaseConfigured) return saveLocalFiliere(filiere, original);
+  const row = {
+    id: filiere.id,
+    cycle_id: filiere.cycleId,
+    name: filiere.name,
+    description: filiere.description,
+    modules_count: filiere.modulesCount || 0,
+  };
+  const { error } = original
+    ? await supabase.from('filieres').update(row).eq('id', original.id).eq('cycle_id', original.cycleId)
+    : await supabase.from('filieres').insert(row);
+  if (error) throw error;
 }
 
 export async function removeFiliere(id, cycleId) {
-  deleteLocalFiliere(id, cycleId);
-  if (!isSupabaseConfigured) return;
-  try {
-    await supabase.from('filieres').delete().eq('id', id).eq('cycle_id', cycleId);
-  } catch (e) {
-    console.warn('Filiere removed locally (Supabase sync optional):', e);
-  }
+  if (!isSupabaseConfigured) return deleteLocalFiliere(id, cycleId);
+  const { error } = await supabase.from('filieres').delete().eq('id', id).eq('cycle_id', cycleId);
+  if (error) throw error;
 }
 
 // Helper to sanitize username into email format for Supabase Auth

@@ -276,16 +276,42 @@ export const getSpecializationById = (id) => {
 
 export const getSemesterById = (id) => mockSemesters.find((semester) => semester.id === id) || { id, name: id, period: '' };
 
+const SUBJECTS_DATA_VERSION_KEY = 'unishare_subjects_version';
+const CURRENT_SUBJECTS_DATA_VERSION = '2';
+
+const mergeSubjectCatalog = (stored) => {
+  const merged = JSON.parse(JSON.stringify(mockSubjects));
+  Object.entries(stored || {}).forEach(([specId, semesters]) => {
+    if (!merged[specId]) merged[specId] = {};
+    Object.entries(semesters || {}).forEach(([semesterId, subjects]) => {
+      const byId = new Map((merged[specId][semesterId] || []).map((subject) => [subject.id, subject]));
+      (Array.isArray(subjects) ? subjects : []).forEach((subject) => {
+        if (subject?.id) byId.set(subject.id, subject);
+      });
+      merged[specId][semesterId] = [...byId.values()];
+    });
+  });
+  return merged;
+};
+
 export const getSubjectsData = () => {
   if (typeof window === 'undefined') return mockSubjects;
   const data = localStorage.getItem('unishare_subjects');
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (localStorage.getItem(SUBJECTS_DATA_VERSION_KEY) !== CURRENT_SUBJECTS_DATA_VERSION) {
+        const migrated = mergeSubjectCatalog(parsed);
+        localStorage.setItem('unishare_subjects', JSON.stringify(migrated));
+        localStorage.setItem(SUBJECTS_DATA_VERSION_KEY, CURRENT_SUBJECTS_DATA_VERSION);
+        return migrated;
+      }
+      return parsed;
     } catch {
       return mockSubjects;
     }
   }
+  localStorage.setItem(SUBJECTS_DATA_VERSION_KEY, CURRENT_SUBJECTS_DATA_VERSION);
   return mockSubjects;
 };
 
