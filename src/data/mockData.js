@@ -1,107 +1,292 @@
 export const mockSpecializations = [
-  { id: 'genie-informatique', name: 'Génie Informatique', description: 'Software engineering, systems, and algorithms.', modulesCount: 42 },
-  { id: 'genie-mecanique', name: 'Génie Mécanique', description: 'Fluid mechanics, solid mechanics, and manufacturing.', modulesCount: 38 },
-  { id: 'genie-electrique', name: 'Génie Électrique', description: 'Electronics, automation, and power systems.', modulesCount: 40 },
-  { id: 'genie-industriel', name: 'Génie Industriel', description: 'Supply chain, quality control, and optimization.', modulesCount: 35 },
+  { id: 'mip', name: 'MIP (Maths, Info, Physique)', description: 'Tronc commun d’accès aux filières d’informatique et d’ingénierie.', modulesCount: 24 },
+  { id: 'mipc', name: 'MIPC (Maths, Info, Physique, Chimie)', description: 'Tronc commun axé sur les sciences physiques et chimiques appliquées.', modulesCount: 24 },
+  { id: 'bcg', name: 'BCG (Biologie, Chimie, Géologie)', description: 'Sciences de la vie, de la matière et de l’environnement.', modulesCount: 24 },
+  { id: 'ge-gm', name: 'GE-GM (Génie Électrique & Mécanique)', description: 'Sciences fondamentales et technologies de l’ingénieur.', modulesCount: 24 },
+  { id: 'genie-informatique', name: 'LST Génie Informatique', description: 'Génie logiciel, architectures web, bases de données et réseaux.', modulesCount: 12 },
+  { id: 'genie-mecanique', name: 'LST Génie Mécanique', description: 'Conception mécanique, modélisation et productique industrielle.', modulesCount: 12 },
+  { id: 'genie-electrique', name: 'LST Génie Électrique', description: 'Électronique avancée, automatique et systèmes communicants.', modulesCount: 12 },
+  { id: 'genie-industriel', name: 'LST Génie Industriel', description: 'Supply chain, gestion de la qualité et optimisation de production.', modulesCount: 12 },
 ];
 
 export const mockSemesters = [
-  { id: 'S1', name: 'Semestre 1', period: 'Autumn / Winter' },
-  { id: 'S2', name: 'Semestre 2', period: 'Spring / Summer' },
-  { id: 'S3', name: 'Semestre 3', period: 'Autumn / Winter' },
-  { id: 'S4', name: 'Semestre 4', period: 'Spring / Summer' },
-  { id: 'S5', name: 'Semestre 5', period: 'Autumn / Winter' },
-  { id: 'S6', name: 'Semestre 6', period: 'Spring / Summer' },
+  { id: 'S1', name: 'Semestre 1', period: 'Automne / Hiver' },
+  { id: 'S2', name: 'Semestre 2', period: 'Printemps / Été' },
+  { id: 'S3', name: 'Semestre 3', period: 'Automne / Hiver' },
+  { id: 'S4', name: 'Semestre 4', period: 'Printemps / Été' },
+  { id: 'S5', name: 'Semestre 5', period: 'Automne / Hiver' },
+  { id: 'S6', name: 'Semestre 6', period: 'Printemps / Été' },
 ];
 
-export const getSemestersForCycle = (cycleId) => (
-  cycleId === 'licence' ? mockSemesters : mockSemesters.slice(0, 4)
-);
+export const getSemestersForCycle = (cycleId) => {
+  if (cycleId === 'licence') {
+    // في الإجازة تكون فقط S5 و S6
+    return mockSemesters.filter((s) => s.id === 'S5' || s.id === 'S6');
+  }
+  if (cycleId === 'master') {
+    return [
+      { id: 'S1', name: 'Master 1 - Semestre 1', period: 'Automne / Hiver' },
+      { id: 'S2', name: 'Master 1 - Semestre 2', period: 'Printemps / Été' },
+      { id: 'S3', name: 'Master 2 - Semestre 3', period: 'Automne / Hiver' },
+      { id: 'S4', name: 'Master 2 - Semestre 4 (PFE)', period: 'Printemps / Été' },
+    ];
+  }
+  // DEUST بالافتراض: S1, S2, S3, S4
+  return mockSemesters.filter((s) => ['S1', 'S2', 'S3', 'S4'].includes(s.id));
+};
 
 const FILIERES_KEY = 'unishare_filieres';
-const defaultFilieres = mockSpecializations.flatMap((item) => [
-  { ...item, cycleId: 'deust' },
-  { ...item, cycleId: 'licence' },
-]);
+
+export const defaultFilieres = [
+  // 1. DEUST (Troncs Communs FST: S1 à S4)
+  { id: 'mip', cycleId: 'deust', name: 'MIP (Maths, Info, Physique)', description: 'Tronc commun d’accès aux filières d’informatique et d’ingénierie.', modulesCount: 24 },
+  { id: 'mipc', cycleId: 'deust', name: 'MIPC (Maths, Info, Physique, Chimie)', description: 'Tronc commun axé sur les sciences physiques et chimiques appliquées.', modulesCount: 24 },
+  { id: 'bcg', cycleId: 'deust', name: 'BCG (Biologie, Chimie, Géologie)', description: 'Sciences de la vie, de la matière et de l’environnement.', modulesCount: 24 },
+  { id: 'ge-gm', cycleId: 'deust', name: 'GE-GM (Génie Électrique & Mécanique)', description: 'Sciences fondamentales et technologies de l’ingénieur.', modulesCount: 24 },
+
+  // 2. Licence Sciences et Techniques (LST: S5 & S6 uniquement)
+  { id: 'genie-informatique', cycleId: 'licence', name: 'LST Génie Informatique', description: 'Génie logiciel, architectures web, bases de données et réseaux.', modulesCount: 12 },
+  { id: 'genie-mecanique', cycleId: 'licence', name: 'LST Génie Mécanique', description: 'Conception mécanique, modélisation et productique industrielle.', modulesCount: 12 },
+  { id: 'genie-electrique', cycleId: 'licence', name: 'LST Génie Électrique', description: 'Électronique avancée, automatique et systèmes communicants.', modulesCount: 12 },
+  { id: 'genie-industriel', cycleId: 'licence', name: 'LST Génie Industriel', description: 'Supply chain, gestion de la qualité et optimisation de production.', modulesCount: 12 },
+
+  // 3. Master Sciences et Techniques (MST)
+  { id: 'mst-ia', cycleId: 'master', name: 'MST Intelligence Artificielle & Data', description: 'Apprentissage profond, big data analytics et vision artificielle.', modulesCount: 16 },
+  { id: 'mst-iot', cycleId: 'master', name: 'MST Systèmes Embarqués & IoT', description: 'Conception de cartes intelligentes, protocoles temps réel et IoT.', modulesCount: 16 },
+];
+
 export const getFilieres = (cycleId = null) => {
-  if (typeof window === 'undefined') return mockSpecializations;
+  if (typeof window === 'undefined') return defaultFilieres;
   const saved = localStorage.getItem(FILIERES_KEY);
-  const filieres = saved ? JSON.parse(saved) : defaultFilieres;
+  let filieres = defaultFilieres;
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.some((item) => item.id === 'mip')) {
+        filieres = parsed;
+      } else {
+        localStorage.setItem(FILIERES_KEY, JSON.stringify(defaultFilieres));
+        filieres = defaultFilieres;
+      }
+    } catch {
+      filieres = defaultFilieres;
+    }
+  } else {
+    localStorage.setItem(FILIERES_KEY, JSON.stringify(defaultFilieres));
+  }
   return cycleId ? filieres.filter((item) => item.cycleId === cycleId) : filieres;
 };
 
-export const saveLocalFiliere = (filiere) => {
+export const saveLocalFiliere = (filiere, original = null) => {
   const items = getFilieres();
-  const next = items.some((item) => item.id === filiere.id)
-    ? items.map((item) => item.id === filiere.id ? filiere : item)
-    : [...items, filiere];
+  let next;
+  if (original) {
+    next = items.map((item) => (item.id === original.id && item.cycleId === original.cycleId ? filiere : item));
+  } else {
+    const exists = items.some((item) => item.id === filiere.id && item.cycleId === filiere.cycleId);
+    next = exists
+      ? items.map((item) => (item.id === filiere.id && item.cycleId === filiere.cycleId ? filiere : item))
+      : [...items, filiere];
+  }
   localStorage.setItem(FILIERES_KEY, JSON.stringify(next));
+  return next;
 };
 
-export const deleteLocalFiliere = (id) => {
-  localStorage.setItem(FILIERES_KEY, JSON.stringify(getFilieres().filter((item) => item.id !== id)));
+export const deleteLocalFiliere = (id, cycleId = null) => {
+  const items = getFilieres();
+  const next = items.filter((item) => {
+    if (cycleId) return !(item.id === id && item.cycleId === cycleId);
+    return item.id !== id;
+  });
+  localStorage.setItem(FILIERES_KEY, JSON.stringify(next));
+  return next;
 };
 
 export const mockSubjects = {
-  'genie-informatique': {
+  // --- DEUST : MIP ---
+  'mip': {
     S1: [
-      { id: 'analyse', name: 'Analyse Mathématique' },
-      { id: 'algebre', name: 'Algèbre Linéaire' },
-      { id: 'algorithmique', name: 'Algorithmique' },
-      { id: 'architecture', name: 'Architecture des Ordinateurs' },
+      { id: 'analyse-1', name: 'Analyse 1 : Suites et Fonctions' },
+      { id: 'algebre-1', name: 'Algèbre 1 : Polynômes et Espaces Vectoriels' },
+      { id: 'mecanique-point', name: 'Mécanique du Point Matériel' },
+      { id: 'thermodynamique', name: 'Thermodynamique Physique' },
+      { id: 'atomistique', name: 'Atomistique et Liaisons Chimiques' },
+      { id: 'informatique-1', name: 'Algorithmique & Programmation C' },
     ],
     S2: [
-      { id: 'programmation-c', name: 'Programmation C' },
+      { id: 'analyse-2', name: 'Analyse 2 : Intégrales et Équations Diff.' },
+      { id: 'algebre-2', name: 'Algèbre 2 : Applications Linéaires et Matrices' },
+      { id: 'electrostatique', name: 'Électrostatique et Électrocinétique' },
+      { id: 'optique', name: 'Optique Géométrique et Ondulatoire' },
+      { id: 'chimie-solutions', name: 'Chimie en Solution' },
       { id: 'structures-donnees', name: 'Structures de Données' },
-      { id: 'probabilites', name: 'Probabilités' },
+    ],
+    S3: [
+      { id: 'analyse-3', name: 'Analyse 3 : Séries et Fonctions à Plusieurs Var.' },
+      { id: 'electromagnetisme', name: 'Électromagnétisme' },
+      { id: 'systemes-exploitation', name: 'Systèmes d’Exploitation (Linux)' },
+      { id: 'probabilites', name: 'Probabilités et Statistiques' },
+    ],
+    S4: [
+      { id: 'analyse-numerique', name: 'Analyse Numérique' },
+      { id: 'bases-donnees', name: 'Bases de Données Relationnelles' },
+      { id: 'poo-java', name: 'Programmation Orientée Objet (Java)' },
+      { id: 'electronique-analogique', name: 'Électronique Analogique' },
     ],
   },
-  'genie-mecanique': {
+
+  // --- DEUST : MIPC ---
+  'mipc': {
     S1: [
-      { id: 'analyse', name: 'Analyse Mathématique' },
-      { id: 'physique-mecanique', name: 'Physique Mécanique' },
-      { id: 'dessin-technique', name: 'Dessin Technique' },
-      { id: 'materiaux', name: 'Science des Matériaux' },
+      { id: 'analyse-1', name: 'Analyse 1' },
+      { id: 'algebre-1', name: 'Algèbre 1' },
+      { id: 'thermo-chimique', name: 'Thermodynamique Chimique' },
+      { id: 'atomistique', name: 'Atomistique' },
+      { id: 'mecanique-point', name: 'Mécanique du Point' },
     ],
     S2: [
-      { id: 'thermodynamique', name: 'Thermodynamique' },
-      { id: 'resistance-materiaux', name: 'Résistance des Matériaux' },
-    ],
-  },
-  'genie-electrique': {
-    S1: [
-      { id: 'analyse', name: 'Analyse Mathématique' },
+      { id: 'analyse-2', name: 'Analyse 2' },
       { id: 'electrostatique', name: 'Électrostatique' },
-      { id: 'circuits', name: 'Circuits Électriques' },
-      { id: 'logique', name: 'Logique Combinatoire' },
-    ],
-    S2: [
-      { id: 'electronique', name: 'Électronique Analogique' },
-      { id: 'automatique', name: 'Automatique' },
+      { id: 'chimie-organique', name: 'Chimie Organique 1' },
+      { id: 'optique', name: 'Optique Géométrique' },
     ],
   },
-  'genie-industriel': {
+
+  // --- DEUST : BCG ---
+  'bcg': {
     S1: [
-      { id: 'analyse', name: 'Analyse Mathématique' },
-      { id: 'statistiques', name: 'Statistiques Appliquées' },
-      { id: 'economie', name: 'Économie Industrielle' },
-      { id: 'informatique', name: "Introduction à l'Informatique" },
+      { id: 'biologie-cellulaire', name: 'Biologie Cellulaire' },
+      { id: 'geologie-generale', name: 'Géologie Générale' },
+      { id: 'chimie-generale', name: 'Chimie Générale' },
+      { id: 'physique-biologie', name: 'Physique pour les Sciences de la Vie' },
     ],
     S2: [
+      { id: 'biologie-animale', name: 'Biologie Animale' },
+      { id: 'biologie-vegetale', name: 'Biologie Végétale' },
+      { id: 'chimie-organique-bio', name: 'Chimie Organique & Biochimie' },
+    ],
+  },
+
+  // --- DEUST : GE-GM ---
+  'ge-gm': {
+    S1: [
+      { id: 'analyse-math', name: 'Analyse Mathématique' },
+      { id: 'dessin-technique', name: 'Dessin Technique & CAO' },
+      { id: 'circuits-electriques', name: 'Circuits Électriques' },
+      { id: 'physique-mecanique', name: 'Physique Mécanique' },
+    ],
+    S2: [
+      { id: 'electronique-base', name: 'Électronique Fondamentale' },
+      { id: 'science-materiaux', name: 'Science des Matériaux' },
+      { id: 'automatisme', name: 'Automatique Linéaire' },
+    ],
+  },
+
+  // --- LICENCE : LST Génie Informatique (S5 & S6) ---
+  'genie-informatique': {
+    S5: [
+      { id: 'genie-logiciel', name: 'Génie Logiciel & UML' },
+      { id: 'reseaux-tcp-ip', name: 'Réseaux Informatiques & TCP/IP' },
+      { id: 'dev-web-fullstack', name: 'Développement Web Fullstack' },
+      { id: 'conception-sgbd', name: 'Administration & Conception SGBD' },
       { id: 'recherche-operationnelle', name: 'Recherche Opérationnelle' },
-      { id: 'gestion-production', name: 'Gestion de Production' },
+    ],
+    S6: [
+      { id: 'cloud-devops', name: 'Cloud Computing & DevOps' },
+      { id: 'securite-informatique', name: 'Sécurité Informatique & Cryptographie' },
+      { id: 'frameworks-mobiles', name: 'Développement Mobile (React Native / Flutter)' },
+      { id: 'pfe-licence', name: 'Projet de Fin d’Études (PFE)' },
+    ],
+  },
+
+  // --- LICENCE : LST Génie Mécanique (S5 & S6) ---
+  'genie-mecanique': {
+    S5: [
+      { id: 'mecanique-fluides', name: 'Mécanique des Fluides' },
+      { id: 'thermodynamique-appliquee', name: 'Thermodynamique Appliquée' },
+      { id: 'rdm-avancee', name: 'Résistance des Matériaux Avancée' },
+      { id: 'fabrication-mecanique', name: 'Procédés de Fabrication Mécanique' },
+    ],
+    S6: [
+      { id: 'elements-machines', name: 'Conception des Éléments de Machines' },
+      { id: 'maintenance-industrielle', name: 'Maintenance & Fiabilité Industrielle' },
+      { id: 'pfe-mecanique', name: 'Projet de Fin d’Études (PFE)' },
+    ],
+  },
+
+  // --- LICENCE : LST Génie Électrique (S5 & S6) ---
+  'genie-electrique': {
+    S5: [
+      { id: 'electronique-puissance', name: 'Électronique de Puissance' },
+      { id: 'traitement-signal', name: 'Traitement du Signal' },
+      { id: 'machines-electriques', name: 'Machines Électriques & Entraînements' },
+      { id: 'microcontroleurs', name: 'Microcontrôleurs et Microprocesseurs' },
+    ],
+    S6: [
+      { id: 'reseaux-electriques', name: 'Réseaux Électriques & Énergies Renouvelables' },
+      { id: 'telecoms', name: 'Systèmes de Télécommunications' },
+      { id: 'pfe-electrique', name: 'Projet de Fin d’Études (PFE)' },
+    ],
+  },
+
+  // --- LICENCE : LST Génie Industriel (S5 & S6) ---
+  'genie-industriel': {
+    S5: [
+      { id: 'gestion-production', name: 'Gestion de Production & GPAO' },
+      { id: 'supply-chain', name: 'Logistique & Supply Chain Management' },
+      { id: 'qualite-securite', name: 'Management de la Qualité (ISO / Lean)' },
+      { id: 'analyse-financiere', name: 'Comptabilité et Gestion Financière' },
+    ],
+    S6: [
+      { id: 'lean-manufacturing', name: 'Lean Manufacturing & Six Sigma' },
+      { id: 'gestion-projets', name: 'Gestion de Projets Industriels' },
+      { id: 'pfe-industriel', name: 'Projet de Fin d’Études (PFE)' },
+    ],
+  },
+
+  // --- MASTER : MST IA & Data ---
+  'mst-ia': {
+    S1: [
+      { id: 'machine-learning', name: 'Machine Learning Avancé' },
+      { id: 'big-data-tech', name: 'Architectures Big Data (Hadoop / Spark)' },
+      { id: 'optimisation-convexe', name: 'Optimisation pour Data Science' },
+      { id: 'python-data', name: 'Programmation Avancée Python' },
+    ],
+    S2: [
+      { id: 'deep-learning', name: 'Deep Learning & Réseaux de Neurones' },
+      { id: 'nlp', name: 'Traitement du Langage Naturel (NLP)' },
+      { id: 'computer-vision', name: 'Vision par Ordinateur' },
+    ],
+    S3: [
+      { id: 'reinforcement-learning', name: 'Apprentissage par Renforcement' },
+      { id: 'mlops', name: 'MLOps & Déploiement de Modèles IA' },
+    ],
+    S4: [
+      { id: 'pfe-master', name: 'Stage de Fin d’Études / PFE' },
     ],
   },
 };
 
-export const getSpecializationById = (id) => mockSpecializations.find((spec) => spec.id === id);
+export const getSpecializationById = (id) => {
+  const all = getFilieres();
+  const found = all.find((spec) => spec.id === id);
+  if (found) return found;
+  return mockSpecializations.find((spec) => spec.id === id) || { id, name: id, description: '' };
+};
 
-export const getSemesterById = (id) => mockSemesters.find((semester) => semester.id === id);
+export const getSemesterById = (id) => mockSemesters.find((semester) => semester.id === id) || { id, name: id, period: '' };
 
 export const getSubjectsData = () => {
   if (typeof window === 'undefined') return mockSubjects;
   const data = localStorage.getItem('unishare_subjects');
-  return data ? JSON.parse(data) : mockSubjects;
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return mockSubjects;
+    }
+  }
+  return mockSubjects;
 };
 
 export const getSubjectsForSemester = (specId, semesterId) => {
@@ -131,14 +316,6 @@ const INIT_UPLOADS_KEY = 'unishare_uploads';
 const INIT_COMMENTS_KEY = 'unishare_comments';
 const CURRENT_USER_KEY = 'unishare_current_user';
 const INIT_SUBJECTS_KEY = 'unishare_subjects';
-
-// إنشاء حسابات افتراضية في البداية (مشرف وطالب تجريبي)
-if (typeof window !== 'undefined' && !localStorage.getItem(INIT_USERS_KEY)) {
-  localStorage.setItem(INIT_USERS_KEY, JSON.stringify([
-    { username: 'admin', password: 'admin', specialization: 'All', level: 'Admin', role: 'admin' },
-    { username: 'student', password: 'student', specialization: 'genie-informatique', level: 'S1', role: 'teacher' }
-  ]));
-}
 
 if (typeof window !== 'undefined' && !localStorage.getItem(INIT_SUBJECTS_KEY)) {
   localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(mockSubjects));
@@ -203,7 +380,7 @@ export const addUploadedResource = (title, category, specId, semesterId, subject
     author,
     size,
     fileName,
-    fileUrl, // base64 أو رابط YouTube
+    fileUrl,
     format: category === 'youtube' ? 'Vidéo' : (fileName?.split('.').pop()?.toUpperCase() || 'PDF'),
     date: new Date().toISOString().split('T')[0],
     status: 'pending',
@@ -212,7 +389,6 @@ export const addUploadedResource = (title, category, specId, semesterId, subject
   localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(uploads));
   return newResource;
 };
-
 
 export const getApprovedResources = (subjectId) => {
   const uploads = getUploadedResources();
@@ -237,7 +413,6 @@ export const updateUserRole = (username, newRole) => {
   }
 };
 
-// تعديل rejectResource لتخزين سبب الرفض
 export const rejectResource = (resourceId, reason = '') => {
   const uploads = getUploadedResources();
   const resource = uploads.find((r) => String(r.id) === String(resourceId));
@@ -295,21 +470,18 @@ export const updateSubjectName = (specId, semesterId, subjectId, newName) => {
 };
 
 export const deleteSubject = (specId, semesterId, subjectId) => {
-  // 1. Delete subject itself
   const data = getSubjectsData();
   if (data[specId]?.[semesterId]) {
     data[specId][semesterId] = data[specId][semesterId].filter((s) => s.id !== subjectId);
     localStorage.setItem(INIT_SUBJECTS_KEY, JSON.stringify(data));
   }
 
-  // 2. Cascading delete from uploads
   const uploads = getUploadedResources();
   const filteredUploads = uploads.filter(
     (r) => !(r.subjectId === subjectId && r.specId === specId && r.semesterId === semesterId)
   );
   localStorage.setItem(INIT_UPLOADS_KEY, JSON.stringify(filteredUploads));
 
-  // 3. Cascading delete from comments
   if (typeof window !== 'undefined') {
     const comments = JSON.parse(localStorage.getItem(INIT_COMMENTS_KEY) || '[]');
     const filteredComments = comments.filter((c) => c.subjectId !== subjectId);
