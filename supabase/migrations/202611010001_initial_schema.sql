@@ -90,9 +90,6 @@ alter table public.comments enable row level security;
 
 create policy "Profiles visible to self or admins" on public.profiles
   for select to authenticated using (id = (select auth.uid()) or (select public.is_admin()));
-create policy "Users update own basic profile" on public.profiles
-  for update to authenticated using (id = (select auth.uid()))
-  with check (id = (select auth.uid()) and role = (select role from public.profiles p where p.id = (select auth.uid())));
 create policy "Admins manage profiles" on public.profiles
   for all to authenticated using ((select public.is_admin()))
   with check ((select public.is_admin()));

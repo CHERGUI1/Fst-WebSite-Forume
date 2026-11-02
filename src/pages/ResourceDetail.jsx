@@ -1,4 +1,4 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   getResourceByCategoryAndId,
   getSemesterById,
@@ -9,6 +9,8 @@ import {
 
 export default function ResourceDetail() {
   const { specId, semesterId, subjectId, category, resourceId } = useParams();
+  const [searchParams] = useSearchParams();
+  const cycleId = searchParams.get('cycle') || 'deust';
   const spec = getSpecializationById(specId);
   const semester = getSemesterById(semesterId);
   const subject = getSubjectById(specId, semesterId, subjectId);
@@ -16,7 +18,7 @@ export default function ResourceDetail() {
 
   if (!spec || !semester || !subject || !resource) return <Navigate to="/" replace />;
 
-  const subjectPath = `/specializations/${spec.id}/semesters/${semester.id}/subjects/${subject.id}`;
+  const subjectPath = `/specializations/${spec.id}/semesters/${semester.id}/subjects/${subject.id}?cycle=${cycleId}`;
   const categoryLabel = resourceCategoryLabels[category] || 'Ressource';
   const details = [
     { label: 'Type', value: categoryLabel },

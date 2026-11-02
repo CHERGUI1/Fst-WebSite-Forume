@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import ResourceCard from '../components/ResourceCard';
 import {
   getSemesterById,
@@ -28,11 +28,11 @@ export default function Subject() {
 }
 
 function SubjectContent({ specId, semesterId, subjectId }) {
+  const [searchParams] = useSearchParams();
+  const cycleId = searchParams.get('cycle') || 'deust';
   const spec = getSpecializationById(specId);
   const semester = getSemesterById(semesterId);
   const subject = getSubjectById(specId, semesterId, subjectId);
-  const subjectBasePath = `/specializations/${specId}/semesters/${semesterId}/subjects/${subjectId}`;
-
   const [currentUser, setCurrentUser] = useState(() => (
     isSupabaseConfigured ? null : getCurrentUser()
   ));
@@ -104,7 +104,9 @@ function SubjectContent({ specId, semesterId, subjectId }) {
 
   if (!spec || !semester || !subject) return <Navigate to="/" replace />;
 
-  const detailPath = (category, resourceId) => `${subjectBasePath}/resources/${category}/${resourceId}`;
+  const detailPath = (category, resourceId) => (
+    `/specializations/${specId}/semesters/${semesterId}/subjects/${subjectId}/resources/${category}/${resourceId}?cycle=${cycleId}`
+  );
 
   const getCombinedResources = (category) => {
     return approvedUploads.filter((resource) => resource.category === category);

@@ -14,6 +14,10 @@ export const mockSemesters = [
   { id: 'S6', name: 'Semestre 6', period: 'Spring / Summer' },
 ];
 
+export const getSemestersForCycle = (cycleId) => (
+  cycleId === 'licence' ? mockSemesters : mockSemesters.slice(0, 4)
+);
+
 export const mockSubjects = {
   'genie-informatique': {
     S1: [

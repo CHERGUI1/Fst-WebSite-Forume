@@ -18,7 +18,7 @@ const cycleLabels = {
 export default function Home() {
   const { cycleId } = useParams();
   const isCyclePage = Boolean(cycleId);
-  const isDeustPage = cycleId === 'deust';
+  const isStudyCyclePage = cycleId === 'deust' || cycleId === 'licence';
   const cycleLabel = cycleLabels[cycleId];
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,7 +220,8 @@ export default function Home() {
                       <div className="grid grid-cols-1 gap-3">
                         {searchResults.resources.map((res) => {
                           const categoryLabel = resourceCategoryLabels[res.category] || 'Document';
-                          const detailPath = `/specializations/${res.specId}/semesters/${res.semesterId}/subjects/${res.subjectId}`;
+                          const resourceCycle = ['S5', 'S6'].includes(res.semesterId) ? 'licence' : 'deust';
+                          const detailPath = `/specializations/${res.specId}/semesters/${res.semesterId}/subjects/${res.subjectId}?cycle=${resourceCycle}`;
                           return (
                             <Link
                               key={`${res.category}-${res.id}`}
@@ -264,7 +265,7 @@ export default function Home() {
         </>
       )}
 
-      {isDeustPage && (
+      {isStudyCyclePage && (
         <section className="space-y-6">
           <div className="border-b border-slate-200 dark:border-zinc-800 pb-2">
             <p className="text-xs uppercase font-semibold text-blue-900 dark:text-blue-400">{cycleLabel}</p>
@@ -275,7 +276,7 @@ export default function Home() {
             {mockSpecializations.map((spec) => (
               <Link
                 key={spec.id}
-                to={`/specializations/${spec.id}`}
+                to={`/specializations/${spec.id}?cycle=${cycleId}`}
                 className="p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl hover:shadow-md cursor-pointer transition group flex flex-col justify-between"
               >
                 <div>
@@ -295,7 +296,7 @@ export default function Home() {
         </section>
       )}
 
-      {isCyclePage && !isDeustPage && (
+      {isCyclePage && !isStudyCyclePage && (
         <section className="text-center py-12 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-zinc-100">{cycleLabel}</h2>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2">

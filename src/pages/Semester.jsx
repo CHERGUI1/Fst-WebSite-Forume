@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   getSemesterById,
   getSpecializationById,
@@ -12,6 +12,8 @@ import {
 
 export default function Semester() {
   const { specId, semesterId } = useParams();
+  const [searchParams] = useSearchParams();
+  const cycleId = searchParams.get('cycle') || 'deust';
   const spec = getSpecializationById(specId);
   const semester = getSemesterById(semesterId);
 
@@ -97,7 +99,7 @@ export default function Semester() {
                 className="p-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-xl flex items-center justify-between hover:shadow-sm hover:border-slate-300 dark:hover:border-zinc-600 transition group"
               >
                 <Link
-                  to={`/specializations/${spec.id}/semesters/${semester.id}/subjects/${sub.id}`}
+                  to={`/specializations/${spec.id}/semesters/${semester.id}/subjects/${sub.id}?cycle=${cycleId}`}
                   className="flex items-center space-x-3 flex-1 min-w-0"
                 >
                   <div className="w-2.5 h-2.5 rounded-full bg-blue-900 dark:bg-blue-500 flex-shrink-0"></div>

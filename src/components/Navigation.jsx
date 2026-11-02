@@ -24,6 +24,7 @@ function getRouteParams(pathname) {
 
 export default function Navigation() {
   const location = useLocation();
+  const cycleId = new URLSearchParams(location.search).get('cycle') || 'deust';
   const { specId, semesterId, subjectId, category, resourceId } = getRouteParams(location.pathname);
 
   if (location.pathname === '/') return null;
@@ -34,9 +35,9 @@ export default function Navigation() {
   const resource = getResourceByCategoryAndId(category, resourceId);
 
   const paths = [
-    spec && { label: spec.name, to: `/specializations/${spec.id}` },
-    spec && semester && { label: semester.name, to: `/specializations/${spec.id}/semesters/${semester.id}` },
-    spec && semester && subject && { label: subject.name, to: `/specializations/${spec.id}/semesters/${semester.id}/subjects/${subject.id}` },
+    spec && { label: spec.name, to: `/specializations/${spec.id}?cycle=${cycleId}` },
+    spec && semester && { label: semester.name, to: `/specializations/${spec.id}/semesters/${semester.id}?cycle=${cycleId}` },
+    spec && semester && subject && { label: subject.name, to: `/specializations/${spec.id}/semesters/${semester.id}/subjects/${subject.id}?cycle=${cycleId}` },
     resource && { label: resourceCategoryLabels[category] || 'Ressource', to: location.pathname },
   ].filter(Boolean);
 
