@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { getCurrentUser } from '../data/mockData';
+import { getActiveProfile } from '../lib/supabaseService';
 
 
 const cycles = [
@@ -10,7 +11,13 @@ const cycles = [
 ];
 
 export default function Layout({ children }) {
-  const [currentUser] = useState(() => getCurrentUser());
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+
+  useEffect(() => {
+    getActiveProfile().then((p) => {
+      if (p) setCurrentUser(p);
+    });
+  }, []);
 
   const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('unishare-theme');

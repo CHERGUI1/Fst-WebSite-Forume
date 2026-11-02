@@ -9,67 +9,125 @@ import {
   getSpecializationById,
   resourceCategoryLabels,
 } from '../data/mockData';
+import {
+  getActiveProfile,
+  signOutUser,
+  getUserContributions,
+  getPendingUploads,
+  approveUpload,
+  rejectUpload,
+} from '../lib/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function Profile() {
   const navigate = useNavigate();
 
-// State hooks
-const [currentUser] = useState(() => getCurrentUser());
-const [pendingUploads, setPendingUploads] = useState(() => {
-  const user = getCurrentUser();
-  if (user && user.role === 'admin') {
-    return getUploadedResources().filter((r) => r.status === 'pending');
-  }
-  return [];
-});
-const [userContributions, setUserContributions] = useState(() => {
-  const user = getCurrentUser();
-  if (user && user.role !== 'admin') {
-    return getUploadedResources().filter((r) => r.author === user.username);
-  }
-  return [];
-});
+  // State hooks
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const [pendingUploads, setPendingUploads] = useState([]);
+  const [userContributions, setUserContributions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-// Navigation to admin pages
-const goToAdminUsers = () => navigate('/admin/users');
-const goToAdminUploads = () => navigate('/admin/uploads');
+  // Navigation to admin pages
+  const goToAdminUsers = () => navigate('/admin/users');
+  const goToAdminUploads = () => navigate('/admin/uploads');
 
-// Refresh pending uploads after actions
-const refreshPending = () => {
-  const user = getCurrentUser();
-  if (user && user.role === 'admin') {
-    setPendingUploads(getUploadedResources().filter((r) => r.status === 'pending'));
-  }
-};
-
-const handleApprove = (id) => {
-  approveResource(id);
-  refreshPending();
-};
-
-const handleReject = (id) => {
-  const reason = window.prompt('سبب الرفض (اختياري)') || '';
-  rejectResource(id, reason);
-  refreshPending();
-};
-
-
+  // تحميل البيانات من Supabase أو localStorage
   useEffect(() => {
-    if (!getCurrentUser()) {
-      navigate('/auth');
-    }
+    const init = async () => {
+      setLoading(true);
+      let user = getCurrentUser();
+
+      if (isSupabaseConfigured) {
+        const profile = await getActiveProfile();
+        if (profile) user = profile;
+      }
+
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      setCurrentUser(user);
+
+      try {
+        if (isSupabaseConfigured) {
+          if (user.role === 'admin') {
+            const pending = await getPendingUploads();
+            setPendingUploads(pending);
+          } else {
+            const contributions = await getUserContributions(user.id);
+            setUserContributions(contributions);
+          }
+        } else {
+          // fallback localStorage
+          if (user.role === 'admin') {
+            setPendingUploads(getUploadedResources().filter((r) => r.status === 'pending'));
+          } else {
+            setUserContributions(getUploadedResources().filter((r) => r.author === user.username));
+          }
+        }
+      } catch (err) {
+        console.error('Error loading profile data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, [navigate]);
 
-  const handleLogout = () => {
-    logoutUser();
+  // Refresh pending uploads after actions
+  const refreshPending = async () => {
+    try {
+      if (isSupabaseConfigured) {
+        const pending = await getPendingUploads();
+        setPendingUploads(pending);
+      } else {
+        setPendingUploads(getUploadedResources().filter((r) => r.status === 'pending'));
+      }
+    } catch (err) {
+      console.error('Error refreshing pending:', err);
+    }
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      if (isSupabaseConfigured) {
+        await approveUpload(id);
+      } else {
+        approveResource(id);
+      }
+      await refreshPending();
+    } catch (err) {
+      console.error('Error approving:', err);
+      alert(`Erreur: ${err.message}`);
+    }
+  };
+
+  const handleReject = async (id) => {
+    const reason = window.prompt('سبب الرفض (اختياري)') || '';
+    try {
+      if (isSupabaseConfigured) {
+        await rejectUpload(id, reason);
+      } else {
+        rejectResource(id, reason);
+      }
+      await refreshPending();
+    } catch (err) {
+      console.error('Error rejecting:', err);
+      alert(`Erreur: ${err.message}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (isSupabaseConfigured) {
+      await signOutUser();
+    } else {
+      logoutUser();
+    }
     navigate('/');
     window.location.reload();
   };
-
-// Duplicate handlers removed – using the earlier definitions with refreshPending
-
-
-
 
   if (!currentUser) return null;
 
@@ -108,8 +166,14 @@ const handleReject = (id) => {
         </button>
       </section>
 
+      {loading && (
+        <div className="text-center py-8 text-slate-400 dark:text-zinc-500">
+          Chargement...
+        </div>
+      )}
+
       {/* لوحة تحكم المشرف (Admin Moderation Panel) */}
-      {currentUser.role === 'admin' && (
+      {!loading && currentUser.role === 'admin' && (
         <section className="space-y-6">
           <div className="border-b border-slate-200 dark:border-zinc-800 pb-2">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Administration de la Plateforme</h2>
@@ -204,7 +268,7 @@ const handleReject = (id) => {
       )}
 
       {/* لوحة تحكم الطالب (Student Contributions) */}
-      {currentUser.role !== 'admin' && (
+      {!loading && currentUser.role !== 'admin' && (
         <section className="space-y-6">
           <div className="border-b border-slate-200 dark:border-zinc-800 pb-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Mes Contributions</h2>
@@ -240,10 +304,12 @@ const handleReject = (id) => {
                     className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
                       res.status === 'approved'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900'
+                        : res.status === 'rejected'
+                        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900'
                         : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900'
                     }`}
                   >
-                    {res.status === 'approved' ? 'En ligne' : 'En attente'}
+                    {res.status === 'approved' ? 'En ligne' : res.status === 'rejected' ? 'Rejeté' : 'En attente'}
                   </span>
                 </div>
               ))}

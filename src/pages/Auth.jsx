@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, registerUser, mockSpecializations } from '../data/mockData';
+import { signInUser, signUpUser } from '../lib/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ export default function Auth() {
 
   // حقول الحساب
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [specialization, setSpecialization] = useState('genie-informatique');
   const [level, setLevel] = useState('S1');
@@ -19,36 +22,65 @@ export default function Auth() {
 
   const semesters = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!username.trim() || !password.trim()) {
-      setError('Veuillez remplir tous les champs.');
-      return;
+    if (isLogin) {
+      if (!email.trim() || !password.trim()) {
+        setError('Veuillez remplir votre e-mail et mot de passe.');
+        return;
+      }
+    } else {
+      if (!username.trim() || !email.trim() || !password.trim()) {
+        setError('Veuillez remplir tous les champs obligatoires.');
+        return;
+      }
     }
+
+    setLoading(true);
 
     try {
       if (isLogin) {
-        // تسجيل الدخول
-        loginUser(username, password);
+        // تسجيل الدخول بالبريد الإلكتروني
+        if (isSupabaseConfigured) {
+          await signInUser(email, password);
+        } else {
+          loginUser(username, password);
+        }
+
         setSuccess('Connexion réussie ! Redirection...');
         setTimeout(() => {
-          // الانتقال للصفحة التي طلبها أو للملف الشخصي
           const origin = location.state?.from || '/profile';
           navigate(origin, { replace: true });
           window.location.reload(); // تحديث الهيدر
-        }, 1000);
+        }, 800);
       } else {
         // تسجيل حساب جديد
-        registerUser(username, password, specialization, level);
-        setSuccess('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
+        if (isSupabaseConfigured) {
+          await signUpUser(username, password, specialization, level, email.trim());
+        } else {
+          registerUser(username, password, specialization, level);
+        }
+
+        setSuccess('Compte créé avec succès ! Veuillez vérifier votre boîte de réception si une confirmation est requise.');
         setIsLogin(true);
         setPassword('');
       }
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue.');
+      console.error(err);
+      if (err.message?.includes('Email not confirmed')) {
+        setError('Votre adresse e-mail n’est pas encore confirmée. Veuillez vérifier votre boîte e-mail ou contacter l’administrateur.');
+      } else if (err.message?.includes('Invalid login credentials')) {
+        setError('Nom d’utilisateur/e-mail ou mot de passe incorrect.');
+      } else {
+        setError(err.message || 'Une erreur est survenue.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,19 +116,37 @@ export default function Auth() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* حقل البريد الإلكتروني — يظهر دائماً */}
             <div>
-              <label htmlFor="username" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
-                Nom d'utilisateur
+              <label htmlFor="email" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
+                Adresse e-mail
               </label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ex: student1"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="etudiant@univ.edu"
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
               />
             </div>
+
+            {/* اسم المستخدم — فقط عند إنشاء حساب جديد */}
+            {!isLogin && (
+              <div>
+                <label htmlFor="username" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
+                  Nom d'utilisateur
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Ex: amino"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-900 dark:focus:ring-blue-600 focus:border-transparent transition text-slate-900 dark:text-white"
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase mb-1">
@@ -158,9 +208,10 @@ export default function Auth() {
           <div>
             <button
               type="submit"
-              className="w-full px-5 py-3 rounded-xl bg-blue-900 dark:bg-blue-600 text-white font-semibold hover:bg-blue-800 dark:hover:bg-blue-500 transition shadow-sm hover:shadow-md text-sm cursor-pointer"
+              disabled={loading}
+              className="w-full px-5 py-3 rounded-xl bg-blue-900 dark:bg-blue-600 text-white font-semibold hover:bg-blue-800 dark:hover:bg-blue-500 transition shadow-sm hover:shadow-md text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLogin ? 'Se connecter' : 'Créer un compte'}
+              {loading ? 'Chargement en cours...' : isLogin ? 'Se connecter' : 'Créer un compte'}
             </button>
           </div>
         </form>

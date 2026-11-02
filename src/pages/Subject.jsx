@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import ResourceCard from '../components/ResourceCard';
 import {
@@ -12,6 +12,14 @@ import {
   getSubjectComments,
   addSubjectComment,
 } from '../data/mockData';
+import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  uploadResource as uploadToSupabase,
+  getSubjectApprovedResources,
+  fetchSubjectComments,
+  postSubjectComment,
+  getActiveProfile,
+} from '../lib/supabaseService';
 
 export default function Subject() {
   const { specId, semesterId, subjectId } = useParams();
@@ -20,11 +28,11 @@ export default function Subject() {
   const subject = getSubjectById(specId, semesterId, subjectId);
   const subjectBasePath = `/specializations/${specId}/semesters/${semesterId}/subjects/${subjectId}`;
 
-  const [currentUser] = useState(() => getCurrentUser());
-  const [prevSubjectId, setPrevSubjectId] = useState(subjectId);
-  const [approvedUploads, setApprovedUploads] = useState(() => getApprovedResources(subjectId));
-  const [comments, setComments] = useState(() => getSubjectComments(subjectId));
-  
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const [approvedUploads, setApprovedUploads] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+
   // حالات نموذج الرفع
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCategory, setUploadCategory] = useState('courses');
@@ -37,11 +45,40 @@ export default function Subject() {
   // حالات منتدى المناقشة
   const [commentText, setCommentText] = useState('');
 
-  // مزامنة الحالة مباشرة أثناء رندر المادة عند التنقل
-  if (subjectId !== prevSubjectId) {
-    setPrevSubjectId(subjectId);
-    setApprovedUploads(getApprovedResources(subjectId));
-    setComments(getSubjectComments(subjectId));
+  // مزامنة الملف الشخصي
+  useEffect(() => {
+    getActiveProfile().then((p) => {
+      if (p) setCurrentUser(p);
+    });
+  }, []);
+
+  // جلب الموارد والتعليقات من Supabase عند فتح أو تغيير المادة
+  useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      if (!isSupabaseConfigured) {
+        setApprovedUploads(getApprovedResources(subjectId));
+        setComments(getSubjectComments(subjectId));
+        return;
+      }
+      setLoadingResources(true);
+      try {
+        const [cloudRes, cloudComments] = await Promise.all([
+          getSubjectApprovedResources(subjectId),
+          fetchSubjectComments(subjectId),
+        ]);
+        if (isMounted) {
+          setApprovedUploads(cloudRes);
+          setComments(cloudComments);
+        }
+      } catch (err) {
+        console.error('Error fetching subject data:', err);
+      } finally {
+        if (isMounted) setLoadingResources(false);
+      }
+    };
+
+    loadData();
     setUploadTitle('');
     setUploadCategory('courses');
     setUploadValue('');
@@ -49,14 +86,21 @@ export default function Subject() {
     setUploadSuccess('');
     setUploadError('');
     setCommentText('');
-  }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [subjectId]);
 
   if (!spec || !semester || !subject) return <Navigate to="/" replace />;
 
   const detailPath = (category, resourceId) => `${subjectBasePath}/resources/${category}/${resourceId}`;
 
   const getCombinedResources = (category) => {
-    return approvedUploads.filter((r) => r.category === category);
+    const cloud = approvedUploads.filter((r) => r.category === category);
+    // If no cloud resources yet, keep mock resources so the design has demonstration cards
+    const staticRes = cloud.length === 0 ? (mockResources[category] || []) : [];
+    return [...cloud, ...staticRes];
   };
 
   const handleUploadSubmit = async (e) => {
@@ -76,52 +120,70 @@ export default function Subject() {
       setUploadError('الرجاء إدخال رابط الفيديو.');
       return;
     }
-    if (uploadFile && uploadFile.size > 5 * 1024 * 1024) {
-      setUploadError('حجم الملف يتجاوز الحد الأقصى (5 MB).');
+    if (uploadFile && uploadFile.size > 50 * 1024 * 1024) {
+      setUploadError('حجم الملف يتجاوز الحد الأقصى (50 MB).');
       return;
     }
 
     try {
       setUploading(true);
-      let fileUrl = null;
-      let fileSize = '';
 
-      if (uploadCategory !== 'youtube' && uploadFile) {
-        // قراءة الملف كـ base64 وحفظه في localStorage
-        fileUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target.result);
-          reader.onerror = () => reject(new Error('فشل قراءة الملف'));
-          reader.readAsDataURL(uploadFile);
+      if (isSupabaseConfigured) {
+        await uploadToSupabase({
+          title: uploadTitle.trim(),
+          category: uploadCategory,
+          specId,
+          semesterId,
+          subjectId,
+          file: uploadFile,
+          youtubeUrl: uploadValue.trim(),
+          authorName: currentUser?.username || 'Étudiant',
         });
-        const kb = uploadFile.size / 1024;
-        fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb.toFixed(0)} KB`;
-      }
 
-      const newRes = addUploadedResource(
-        uploadTitle,
-        uploadCategory,
-        specId,
-        semesterId,
-        subjectId,
-        currentUser.username,
-        uploadCategory === 'youtube' ? uploadValue.trim() : fileSize,
-        fileUrl,
-        uploadFile?.name || null
-      );
-
-      // Auto‑approve if the uploader is not a regular student
-      if (currentUser.role !== 'student') {
-        approveResource(newRes.id);
-        setUploadSuccess('تم رفع الملف وتمت الموافقة تلقائياً.');
+        if (currentUser?.role === 'admin') {
+          const fresh = await getSubjectApprovedResources(subjectId);
+          setApprovedUploads(fresh);
+          setUploadSuccess('تم رفع الملف ونشره مباشرة في صفحة المادة.');
+        } else {
+          setUploadSuccess('تم رفع الملف بنجاح إلى السحابة! سيظهر بعد معاينة المشرف وموافقته.');
+        }
       } else {
-        setUploadSuccess('تم رفع الملف بنجاح! سيظهر بعد موافقة المشرف.');
+        let fileUrl = null;
+        let fileSize = '';
+        if (uploadCategory !== 'youtube' && uploadFile) {
+          fileUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => resolve(ev.target.result);
+            reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+            reader.readAsDataURL(uploadFile);
+          });
+          const kb = uploadFile.size / 1024;
+          fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb.toFixed(0)} KB`;
+        }
+
+        const newRes = addUploadedResource(
+          uploadTitle,
+          uploadCategory,
+          specId,
+          semesterId,
+          subjectId,
+          currentUser?.username || 'Étudiant',
+          uploadCategory === 'youtube' ? uploadValue.trim() : fileSize,
+          fileUrl,
+          uploadFile?.name || null
+        );
+
+        if (currentUser?.role !== 'student') {
+          approveResource(newRes.id);
+          setUploadSuccess('تم رفع الملف وتمت الموافقة تلقائياً.');
+        } else {
+          setUploadSuccess('تم رفع الملف بنجاح! سيظهر بعد موافقة المشرف.');
+        }
       }
 
       setUploadTitle('');
       setUploadValue('');
       setUploadFile(null);
-      // reset file input
       const fileInput = document.getElementById('upload-file');
       if (fileInput) fileInput.value = '';
     } catch (err) {
@@ -131,13 +193,22 @@ export default function Subject() {
     }
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
-    const newComment = addSubjectComment(subjectId, currentUser.username, commentText);
-    setComments([...comments, newComment]);
-    setCommentText('');
+    try {
+      if (isSupabaseConfigured) {
+        const newC = await postSubjectComment(subjectId, commentText);
+        setComments((prev) => [...prev, newC]);
+      } else {
+        const newComment = addSubjectComment(subjectId, currentUser?.username || 'Étudiant', commentText);
+        setComments((prev) => [...prev, newComment]);
+      }
+      setCommentText('');
+    } catch (err) {
+      alert(err.message || 'Erreur lors de l’envoi du commentaire.');
+    }
   };
 
   const combinedCourses = getCombinedResources('courses');
@@ -147,9 +218,16 @@ export default function Subject() {
 
   return (
     <div className="space-y-12">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{subject.name}</h1>
-        <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Ressources pédagogiques validées.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{subject.name}</h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Ressources pédagogiques validées.</p>
+        </div>
+        {loadingResources && (
+          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+            Synchronisation cloud...
+          </span>
+        )}
       </div>
 
       <div className="space-y-8">
@@ -231,7 +309,12 @@ export default function Subject() {
       {/* قسم رفع الملفات والمنتدى */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <div className="bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-2xl p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-lg text-slate-900 dark:text-white">Partager un document</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Partager un document</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold">
+              Max 50 MB
+            </span>
+          </div>
           <p className="text-xs text-slate-400 dark:text-zinc-500">
             Aidez vos camarades en partageant vos cours, TDs ou examens corrigés.
           </p>
@@ -299,7 +382,7 @@ export default function Subject() {
               ) : (
                 <div>
                   <label htmlFor="upload-file" className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mb-1">
-                    اختر الملف (PDF أو صورة — الحد الأقصى 5 MB)
+                    اختر الملف (PDF أو Word أو صورة — الحد الأقصى 50 MB)
                   </label>
                   <div className="relative">
                     <input
@@ -334,7 +417,7 @@ export default function Subject() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    جارٍ الرفع...
+                    جارٍ الرفع إلى السحابة...
                   </>
                 ) : 'رفع الملف'}
               </button>
@@ -372,7 +455,7 @@ export default function Subject() {
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="font-bold text-blue-900 dark:text-blue-400 flex items-center gap-1">
                       <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[8px] font-bold text-blue-900 dark:text-blue-300">
-                        {comment.username.substring(0, 2).toUpperCase()}
+                        {(comment.username || 'U').substring(0, 2).toUpperCase()}
                       </span>
                       {comment.username}
                     </span>
