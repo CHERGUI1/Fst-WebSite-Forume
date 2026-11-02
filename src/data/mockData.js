@@ -66,25 +66,6 @@ export const mockSubjects = {
   },
 };
 
-export const mockResources = {
-  courses: [
-    { id: 1, title: 'Chapitre 1: Espaces Vectoriels - Cours Complet', date: '2026-01-15', size: '2.4 MB', author: 'Département pédagogique', format: 'PDF' },
-    { id: 2, title: 'Chapitre 2: Matrices et Applications Linéaires', date: '2026-02-02', size: '1.8 MB', author: 'Équipe UniShare', format: 'PDF' },
-  ],
-  td: [
-    { id: 1, title: 'Série de TD 1: Systèmes Linéaires', date: '2026-01-20', size: '840 KB', author: 'Groupe TD', format: 'PDF' },
-    { id: 2, title: 'Série de TD 2: Diagonalisation', date: '2026-02-10', size: '920 KB', author: 'Groupe TD', format: 'PDF' },
-  ],
-  exams: [
-    { id: 1, title: 'Examen Final - Session Normale 2025', date: '2025-06-18', size: '1.1 MB', hasCorrection: true, author: 'Archives ENSA', format: 'PDF' },
-    { id: 2, title: 'Rattrapage - Session 2025', date: '2025-07-05', size: '1.0 MB', hasCorrection: false, author: 'Archives ENSA', format: 'PDF' },
-  ],
-  youtube: [
-    { id: 1, title: "Comprendre l'Algèbre Linéaire en 20 min", channel: 'Maths Academy', duration: '21:45', views: '45K views', format: 'Vidéo' },
-    { id: 2, title: 'Les Secrets des Déterminants', channel: 'Sciences Sup', duration: '15:10', views: '12K views', format: 'Vidéo' },
-  ],
-};
-
 export const getSpecializationById = (id) => mockSpecializations.find((spec) => spec.id === id);
 
 export const getSemesterById = (id) => mockSemesters.find((semester) => semester.id === id);
@@ -105,8 +86,6 @@ export const getSubjectById = (specId, semesterId, subjectId) => {
 };
 
 export const getResourceByCategoryAndId = (category, resourceId) => {
-  const staticRes = mockResources[category]?.find((resource) => String(resource.id) === String(resourceId));
-  if (staticRes) return staticRes;
   const uploads = getUploadedResources();
   return uploads.find((resource) => String(resource.id) === String(resourceId) && resource.category === category);
 };

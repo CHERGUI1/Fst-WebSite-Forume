@@ -249,6 +249,31 @@ export async function getSubjectApprovedResources(subjectId) {
   return resourcesWithUrls;
 }
 
+export async function getSearchableApprovedResources() {
+  if (!isSupabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from('resources')
+    .select('id, title, category, specialization_id, semester_id, subject_id, author_name, file_size, external_url, created_at')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return data.map((resource) => ({
+    id: resource.id,
+    title: resource.title,
+    category: resource.category,
+    specId: resource.specialization_id,
+    semesterId: resource.semester_id,
+    subjectId: resource.subject_id,
+    author: resource.author_name,
+    size: resource.file_size ? `${(resource.file_size / (1024 * 1024)).toFixed(1)} MB` : '',
+    channel: resource.category === 'youtube' ? 'YouTube' : null,
+    date: resource.created_at ? resource.created_at.split('T')[0] : '',
+  }));
+}
+
 // Fetch all resources for admin moderation
 export async function getAdminUploads() {
   if (!isSupabaseConfigured) return [];

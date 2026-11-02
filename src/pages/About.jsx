@@ -87,10 +87,10 @@ export default function About() {
 
           <div className="grid grid-cols-2 gap-6 text-center">
             {[
-              { label: "Spécialisations", val: "4 Filiales" },
-              { label: "Ressources à jour", val: "100% Validées" },
-              { label: "Fichiers & Vidéos", val: "1.5K+ Supports" },
-              { label: "Coût d'utilisation", val: "Gratuit à vie" }
+              { label: "Spécialisations", val: "4" },
+              { label: "Contribution des étudiants", val: "Ouverte" },
+              { label: "Mise en ligne", val: "Après validation" },
+              { label: "Accès", val: "Gratuit" }
             ].map((stat, idx) => (
               <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl">
                 <div className="text-xl sm:text-2xl font-extrabold text-blue-400">{stat.val}</div>

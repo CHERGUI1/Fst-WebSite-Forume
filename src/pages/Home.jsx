@@ -1,6 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { mockSpecializations, mockResources, resourceCategoryLabels, getSubjectsData } from '../data/mockData';
+import {
+  mockSpecializations,
+  resourceCategoryLabels,
+  getSubjectsData,
+  getUploadedResources,
+} from '../data/mockData';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { getSearchableApprovedResources } from '../lib/supabaseService';
 
 const cycleLabels = {
   deust: 'DEUST',
@@ -15,9 +22,30 @@ export default function Home() {
   const cycleLabel = cycleLabels[cycleId];
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [allResources, setAllResources] = useState([]);
 
-  // تهيئة البيانات للبحث وتسطيحها (Flattening)
-  const { allSubjects, allResources } = useMemo(() => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadResources = async () => {
+      try {
+        const resources = isSupabaseConfigured
+          ? await getSearchableApprovedResources()
+          : getUploadedResources().filter((resource) => resource.status === 'approved');
+        if (isMounted) setAllResources(resources);
+      } catch (error) {
+        console.error('Error loading searchable resources:', error);
+      }
+    };
+
+    loadResources();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // تهيئة المواد للبحث وتسطيحها (Flattening)
+  const allSubjects = useMemo(() => {
     const subjects = [];
     Object.entries(getSubjectsData()).forEach(([specId, semesters]) => {
       const spec = mockSpecializations.find((s) => s.id === specId);
@@ -34,43 +62,7 @@ export default function Home() {
       });
     });
 
-    const resources = [];
-    Object.entries(mockResources).forEach(([category, list]) => {
-      list.forEach((resource) => {
-        // تعيين التخصص والمادة الافتراضية لعرض الروابط بشكل صحيح في الموك
-        let subjectId = 'algebre';
-        let specId = 'genie-informatique';
-        let semesterId = 'S1';
-
-        const titleLower = resource.title.toLowerCase();
-        if (titleLower.includes('analyse') || titleLower.includes('espaces vectoriels') || titleLower.includes('chapitre 1')) {
-          subjectId = 'analyse';
-        } else if (titleLower.includes('matériaux') || titleLower.includes('science')) {
-          specId = 'genie-mecanique';
-          subjectId = 'materiaux';
-        } else if (titleLower.includes('circuits') || titleLower.includes('électrique')) {
-          specId = 'genie-electrique';
-          subjectId = 'circuits';
-        } else if (titleLower.includes('production') || titleLower.includes('gestion')) {
-          specId = 'genie-industriel';
-          subjectId = 'gestion-production';
-          semesterId = 'S2';
-        } else if (titleLower.includes('c') && !titleLower.includes('matrices')) {
-          subjectId = 'programmation-c';
-          semesterId = 'S2';
-        }
-
-        resources.push({
-          ...resource,
-          category,
-          specId,
-          semesterId,
-          subjectId,
-        });
-      });
-    });
-
-    return { allSubjects: subjects, allResources: resources };
+    return subjects;
   }, []);
 
   const query = searchQuery.trim().toLowerCase();
@@ -228,7 +220,7 @@ export default function Home() {
                       <div className="grid grid-cols-1 gap-3">
                         {searchResults.resources.map((res) => {
                           const categoryLabel = resourceCategoryLabels[res.category] || 'Document';
-                          const detailPath = `/specializations/${res.specId}/semesters/${res.semesterId}/subjects/${res.subjectId}/resources/${res.category}/${res.id}`;
+                          const detailPath = `/specializations/${res.specId}/semesters/${res.semesterId}/subjects/${res.subjectId}`;
                           return (
                             <Link
                               key={`${res.category}-${res.id}`}
@@ -256,12 +248,11 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-center">
+            <section className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto text-center">
               {[
-                { label: 'Spécialités', val: '4' },
-                { label: 'Cours & Documents', val: '1,200+' },
-                { label: 'Vidéos de Soutien', val: '340+' },
-                { label: 'Étudiants Actifs', val: '5K+' },
+                { label: 'Spécialités', val: mockSpecializations.length },
+                { label: 'Ressources disponibles', val: allResources.length },
+                { label: 'Matières', val: allSubjects.length },
               ].map((metric) => (
                 <div key={metric.label} className="p-4 bg-slate-100 dark:bg-zinc-800/50 rounded-xl">
                   <div className="text-2xl font-bold text-blue-900 dark:text-blue-500">{metric.val}</div>

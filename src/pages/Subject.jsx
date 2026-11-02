@@ -5,7 +5,6 @@ import {
   getSemesterById,
   getSpecializationById,
   getSubjectById,
-  mockResources,
   getCurrentUser,
   getApprovedResources,
   addUploadedResource,
@@ -97,11 +96,12 @@ export default function Subject() {
   const detailPath = (category, resourceId) => `${subjectBasePath}/resources/${category}/${resourceId}`;
 
   const getCombinedResources = (category) => {
-    const cloud = approvedUploads.filter((r) => r.category === category);
-    // If no cloud resources yet, keep mock resources so the design has demonstration cards
-    const staticRes = cloud.length === 0 ? (mockResources[category] || []) : [];
-    return [...cloud, ...staticRes];
+    return approvedUploads.filter((resource) => resource.category === category);
   };
+
+  const emptyResourcesMessage = loadingResources
+    ? 'Chargement des ressources...'
+    : 'Aucune ressource disponible pour le moment.';
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -234,7 +234,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Cours Magistraux</h3>
           {combinedCourses.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">{emptyResourcesMessage}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedCourses.map((resource) => (
@@ -247,7 +247,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Travaux Dirigés (TD)</h3>
           {combinedTds.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">{emptyResourcesMessage}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedTds.map((resource) => (
@@ -260,7 +260,7 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Archives Examens & Contrôles</h3>
           {combinedExams.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">{emptyResourcesMessage}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {combinedExams.map((resource) => (
@@ -273,11 +273,11 @@ export default function Subject() {
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Vidéos & Playlists Recommandées</h3>
           {combinedVideos.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">Aucune ressource disponible pour le moment.</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500 italic">{emptyResourcesMessage}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {combinedVideos.map((video) => (
-                <Link key={video.id} to={detailPath('youtube', video.id)} className="p-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl flex space-x-4 hover:shadow-sm cursor-pointer transition group">
+                <a key={video.id} href={video.fileUrl || video.size} target="_blank" rel="noreferrer" className="p-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl flex space-x-4 hover:shadow-sm cursor-pointer transition group">
                   <div className="w-32 h-20 bg-slate-100 dark:bg-zinc-700 rounded-lg flex-shrink-0 flex items-center justify-center relative overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white shadow-sm z-10">
                       <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -297,7 +297,7 @@ export default function Subject() {
                       <span className="text-[10px] text-slate-400 dark:text-zinc-500">{video.views}</span>
                     )}
                   </div>
-                </Link>
+                </a>
               ))}
             </div>
           )}
